@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:social_connect_hub/feature/onboarding/models/onboarding_item.dart';
+import 'package:social_connect_hub/router.dart';
 
 import '../widgets/dotted_page_indicator.dart';
 
@@ -19,6 +20,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seen_onboarding', true);
+    AppRouter.hasSeenOnboarding=true;
     if (mounted) {
       context.go('/login');
     }
