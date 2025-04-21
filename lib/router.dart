@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'feature/auth/pages/login_page.dart';
+import 'feature/auth/pages/register_page.dart';
 import 'feature/auth/services/auth_service.dart';
 import 'feature/onboarding/pages/onboarding_page.dart';
 import 'feature/welcome/pages/welcome_page.dart';
@@ -49,6 +51,16 @@ class AppRouter{
         GoRoute(
           path: '/',
           builder: (context, state) => const WelcomePage(),
+        ),
+
+        // Authentication
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => const LoginPage(),
+        ),
+        GoRoute(
+          path: '/register',
+          builder: (context, state) => const RegisterPage(),
         ),
 
   ]);
