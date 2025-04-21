@@ -44,7 +44,7 @@ class AppTheme{
 
   // Dark theme
   static final ThemeData darkTheme = ThemeData(
-    colorScheme: _lightColorScheme,
+    colorScheme: _darkColorScheme,
     brightness: Brightness.dark,
   );
 
