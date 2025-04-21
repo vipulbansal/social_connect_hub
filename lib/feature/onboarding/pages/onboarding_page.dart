@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:social_connect_hub/feature/onboarding/models/onboarding_item.dart';
 
+import '../widgets/dotted_page_indicator.dart';
+
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -30,6 +32,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -66,6 +69,58 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     _currentPage = page;
                   });
                 },
+              ),
+            ),
+            // Dotted page indicator
+            Padding(
+              padding: const EdgeInsets.only(bottom: 32.0),
+              child: AnimatedDottedPageIndicator(
+                pageCount: onboardingItems.length,
+                controller: _pageController,
+                activeColor: theme.colorScheme.primary,
+                inactiveColor: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                dotSize: 10.0,
+                spacing: 8.0,
+              ),
+            ),
+            // Next/Get Started button
+            // Next/Get Started button
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_pageController.page!.round() <
+                        onboardingItems.length - 1) {
+                      // Go to next page
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      // Navigate to the next screen (e.g., login)
+                      // Navigator.pushReplacementNamed(context, '/login');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                  child: Text(
+                    _currentPage == onboardingItems.length - 1
+                        ? 'Get Started'
+                        : 'Next',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

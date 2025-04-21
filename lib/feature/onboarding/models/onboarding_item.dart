@@ -11,7 +11,7 @@ class OnboardingItem {
 
 final List<OnboardingItem> onboardingItems = [
   OnboardingItem(
-    title: 'Welcome to FlutterChat',
+    title: 'Welcome to Vipul-ConnectHub',
     description: 'Connect with friends, family, and colleagues with our secure messaging app.',
   ),
   OnboardingItem(
