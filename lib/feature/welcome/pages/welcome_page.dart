@@ -22,7 +22,7 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
     _animationController.forward();
     
     // Auto navigate after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
         context.go('/login');
       }
@@ -37,6 +37,7 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -65,13 +66,13 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
               opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
                 CurvedAnimation(
                   parent: _animationController,
-                  curve: const Interval(0.5, 1.0, curve: Curves.easeInOut), // Start halfway through animation
+                  curve: const Interval(0.2, 1.0, curve: Curves.easeInOut), // Start halfway through animation
                 ),
               ),
               child: const Column(
                 children: [
                   Text(
-                    'FlutterChat',
+                    'Vipul\'s Connect Hub',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -100,7 +101,7 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
                   curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
                 ),
               ),
-              child: const CircularProgressIndicator(),
+              child:  CircularProgressIndicator(color: theme.primaryColor,),
             ),
           ],
         ),

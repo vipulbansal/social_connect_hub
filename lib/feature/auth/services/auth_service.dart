@@ -1,5 +1,7 @@
 
 
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:social_connect_hub/core/di/firebase_service.dart';
@@ -19,16 +21,70 @@ class AuthService extends ChangeNotifier {
   final FirebaseService firebaseService;
   String? _errorMessage;
   User? _firebaseUser;
+  app_user.User? _currentUser;
+
+  // Stream controllers
+  final StreamController<AuthStatus> _authStateController = StreamController<AuthStatus>.broadcast();
+  final StreamController<app_user.User?> _userStreamController = StreamController<app_user.User?>.broadcast();
+  StreamSubscription? _firebaseAuthSubscription;
 
   AuthStatus get status => _status;
-
   String? get errorMessage => _errorMessage;
+  User? get firebaseUser => _firebaseUser;
+  app_user.User? get currentUser => _currentUser;
+  Stream<AuthStatus> get authStateStream => _authStateController.stream;
+  Stream<app_user.User?> get userStream => _userStreamController.stream;
 
   // Auth state
   AuthStatus _status = AuthStatus.uninitialized;
 
-  AuthService({required this.firebaseService});
+  AuthService({required this.firebaseService}){
+    _init();
+  }
+  void _init() {
+    // Listen to Firebase Auth state changes
+    _firebaseAuthSubscription = firebaseService.firebaseAuth.authStateChanges().listen(_onAuthStateChanged);
+  }
 
+  Future<void> _onAuthStateChanged(User? firebaseUser) async {
+    if (firebaseUser == null) {
+      _status = AuthStatus.unauthenticated;
+      _firebaseUser = null;
+      _currentUser = null;
+      _userStreamController.add(null);
+    } else {
+      _status = AuthStatus.authenticated;
+      _firebaseUser = firebaseUser;
+
+      // Load user data from Firestore
+      await _loadUserData(firebaseUser.uid);
+    }
+    _authStateController.add(_status);
+    notifyListeners();
+  }
+
+  Future<void> _loadUserData(String userId) async {
+    try {
+      final doc = await firebaseService.firestore.collection('users').doc(userId).get();
+
+      if (doc.exists) {
+        // Convert Firestore data to User model
+        final userData = doc.data() as Map<String, dynamic>;
+        _currentUser = app_user.User.fromJson({
+          ...userData,
+          'id': userId,
+        });
+
+        // Send updated user to stream
+        _userStreamController.add(_currentUser);
+      } else {
+        print('User document does not exist for uid: $userId');
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      _errorMessage = 'Failed to load user data';
+    }
+  }
   // Sign in with email and password
   Future<bool> signInWithEmailAndPassword(String email, String password) async {
     try {
@@ -40,7 +96,6 @@ class AuthService extends ChangeNotifier {
         email: email,
         password: password,
       );
-
       return true;
     } on FirebaseAuthException catch (e) {
       _status = AuthStatus.error;
@@ -110,11 +165,16 @@ class AuthService extends ChangeNotifier {
           newUser.toJson(),
         );
 
+
+
         // Update FCM token if available
         final fcmToken = await firebaseService.messaging.getToken();
         if (fcmToken != null) {
           await firebaseService.updateFcmToken(user.uid, fcmToken);
         }
+
+        _currentUser=newUser;
+        notifyListeners();
 
         return true;
       } else {

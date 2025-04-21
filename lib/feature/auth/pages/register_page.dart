@@ -54,6 +54,9 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       
       if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration done')),
+        );
         // Navigate to home page
         // Navigation is handled by the router's redirect
       } else if (mounted) {
