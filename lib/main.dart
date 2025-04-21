@@ -1,19 +1,26 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:social_connect_hub/core/di/firebase_service.dart';
 import 'package:social_connect_hub/core/themes/theme_provider.dart';
 import 'package:social_connect_hub/router.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/themes/app_theme.dart';
 import 'feature/auth/services/auth_service.dart';
+import 'firebase_options.dart';
 
 void main()async {
   WidgetsFlutterBinding.ensureInitialized();
   // Check if the user has seen the onboarding
   final prefs = await SharedPreferences.getInstance();
   final seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await setupServiceLocator();
 
   runApp(SocialConnectHubApp(seenOnboarding: seenOnboarding));

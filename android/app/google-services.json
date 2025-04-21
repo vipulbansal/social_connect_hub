@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "260086352966",
+    "project_id": "vipulconnecthub",
+    "storage_bucket": "vipulconnecthub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260086352966:android:9d4241f2be088678a08e47",
+        "android_client_info": {
+          "package_name": "com.vipulsoftwares.social_connect_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHqbTHT-wM0W0qnugsOTITP5_bPdNJ6TY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -93,7 +93,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async{
                     if (_pageController.page!.round() <
                         onboardingItems.length - 1) {
                       // Go to next page
@@ -102,8 +102,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         curve: Curves.easeInOut,
                       );
                     } else {
-                      // Navigate to the next screen (e.g., login)
-                      // Navigator.pushReplacementNamed(context, '/login');
+                      await _completeOnboarding();
                     }
                   },
                   style: ElevatedButton.styleFrom(
