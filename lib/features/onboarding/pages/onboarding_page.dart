@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:social_connect_hub/feature/onboarding/models/onboarding_item.dart';
 import 'package:social_connect_hub/router.dart';
 
+import '../models/onboarding_item.dart';
 import '../widgets/dotted_page_indicator.dart';
 
 class OnboardingPage extends StatefulWidget {
