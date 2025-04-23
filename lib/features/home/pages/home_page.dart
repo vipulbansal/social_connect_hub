@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:social_connect_hub/feature/auth/services/auth_service.dart';
+import '../../auth/services/auth_service.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

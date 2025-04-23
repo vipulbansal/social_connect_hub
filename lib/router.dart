@@ -3,14 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:social_connect_hub/feature/home/pages/home_page.dart';
+
 
 import 'core/di/service_locator.dart';
-import 'feature/auth/pages/login_page.dart';
-import 'feature/auth/pages/register_page.dart';
-import 'feature/auth/services/auth_service.dart';
-import 'feature/onboarding/pages/onboarding_page.dart';
-import 'feature/welcome/pages/welcome_page.dart';
+import 'domain/repositories/auth/auth_repository.dart';
+import 'features/auth/pages/login_page.dart';
+import 'features/auth/pages/register_page.dart';
+import 'features/auth/services/auth_service.dart';
+import 'features/home/pages/home_page.dart';
+import 'features/onboarding/pages/onboarding_page.dart';
+import 'features/welcome/pages/welcome_page.dart';
+
 
 // Helper class to convert Stream to Listenable for GoRouter refreshing
 class GoRouterRefreshStream extends ChangeNotifier {
@@ -32,12 +35,17 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
 class AppRouter{
   static bool hasSeenOnboarding = false;
-  static final router=GoRouter(
-      refreshListenable: GoRouterRefreshStream(locator<AuthService>().authStateStream),
+  static final GoRouter router = GoRouter(
+      refreshListenable: GoRouterRefreshStream(locator<AuthRepository>().watchAuthState()),
       initialLocation: '/',
-      redirect: (context,state){
-        final authService = Provider.of<AuthService>(context, listen: false);
-        final isAuthenticated = authService.status == AuthStatus.authenticated;
+      redirect: (BuildContext context, GoRouterState state) async {
+        final authRepository = locator<AuthRepository>();
+        final authResult = await authRepository.isAuthenticated();
+        final isAuthenticated = authResult.fold(
+            onSuccess: (success) => success,
+            onFailure: (failure) => false
+        );
+
         // Define auth routes
         final isOnboardingRoute = state.matchedLocation == '/onboarding';
         final isWelcomeRoute = state.matchedLocation == '/';
@@ -45,6 +53,7 @@ class AppRouter{
             state.matchedLocation == '/login' ||
             state.matchedLocation == '/register' ||
             isOnboardingRoute;
+
         // If first time user and not already on onboarding route, show onboarding
         if (!hasSeenOnboarding && !isOnboardingRoute) {
           return '/onboarding';

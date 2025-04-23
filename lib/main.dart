@@ -9,7 +9,7 @@ import 'package:social_connect_hub/router.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/themes/app_theme.dart';
-import 'feature/auth/services/auth_service.dart';
+import 'features/auth/services/auth_service.dart';
 import 'firebase_options.dart';
 
 void main()async {

@@ -1,0 +1,251 @@
+
+
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:social_connect_hub/core/di/firebase_service.dart';
+import 'package:social_connect_hub/domain/core/usecase.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../data/models/user.dart' as app_user;
+import '../../../domain/entities/user/user_entity.dart';
+import '../../../domain/repositories/auth/auth_repository.dart';
+import '../../../domain/repositories/user/user_repository.dart';
+import '../../../domain/usecases/auth/reset_password_usecase.dart';
+import '../../../domain/usecases/auth/sign_in_usecase.dart';
+import '../../../domain/usecases/auth/sign_out_usecase.dart';
+import '../../../domain/usecases/auth/sign_up_usecase.dart';
+import '../../../domain/usecases/user/get_user_by_id_usecase.dart';
+
+/// Authentication service that manages user authentication state
+/// using the Provider pattern and clean architecture principles.
+enum AuthStatus { initial, authenticated, unauthenticated }
+class AuthService extends ChangeNotifier {
+  // Core repositories and use cases
+  late AuthRepository _authRepository;
+  late UserRepository _userRepository;
+  late SignInUseCase _signInUseCase;
+  late SignUpUseCase _signUpUseCase;
+  late SignOutUseCase _signOutUseCase;
+  late ResetPasswordUseCase _resetPasswordUseCase;
+
+  // Authentication state
+  UserEntity? _currentUser;
+  bool _isAuthenticated = false;
+  bool _isInitialized = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Getters for state
+  UserEntity? get currentUser => _currentUser;
+  bool get isAuthenticated => _isAuthenticated;
+  bool get isInitialized => _isInitialized;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  // Constructor - can be called without dependencies which will be
+  // fetched from service locator, or with explicit dependencies for testing
+  AuthService({
+    AuthRepository? authRepository,
+    UserRepository? userRepository,
+    SignInUseCase? signInUseCase,
+    SignUpUseCase? signUpUseCase,
+    SignOutUseCase? signOutUseCase,
+    ResetPasswordUseCase? resetPasswordUseCase,
+  }) {
+    _authRepository = authRepository ?? locator<AuthRepository>();
+    _userRepository = userRepository ?? locator<UserRepository>();
+    _signInUseCase = signInUseCase ?? locator<SignInUseCase>();
+    _signUpUseCase = signUpUseCase ?? locator<SignUpUseCase>();
+    _signOutUseCase = signOutUseCase ?? locator<SignOutUseCase>();
+    _resetPasswordUseCase = resetPasswordUseCase ?? locator<ResetPasswordUseCase>();
+
+    // Initialize authentication state
+    _initializeAuthState();
+  }
+
+  // Initialize authentication state
+  Future<void> _initializeAuthState() async {
+    _isLoading = true;
+    notifyListeners();
+
+    final authResult = await _authRepository.isAuthenticated();
+
+    if (authResult.isSuccess && authResult.fold(
+      onSuccess: (isAuthenticated) => isAuthenticated,
+      onFailure: (_) => false,
+    )) {
+      // User is authenticated, get the current user ID
+      final userIdResult = await _authRepository.getCurrentUserId();
+
+      if (userIdResult.isSuccess) {
+        final userId = userIdResult.fold(
+          onSuccess: (id) => id,
+          onFailure: (_) => '',
+        );
+
+        if (userId.isNotEmpty) {
+          // Get user details using the ID
+          _isAuthenticated = true;
+          final userResult = await _userRepository.getUserById(userId);
+
+          userResult.fold(
+              onSuccess: (user) {
+                _currentUser = user;
+                _isInitialized = true;
+                _isLoading = false;
+                notifyListeners();
+              },
+              onFailure: (failure) {
+                _errorMessage = failure.message;
+                _isAuthenticated = false;
+                _isInitialized = true;
+                _isLoading = false;
+                notifyListeners();
+              }
+          );
+        } else {
+          // Invalid user ID
+          _isAuthenticated = false;
+          _currentUser = null;
+          _isInitialized = true;
+          _isLoading = false;
+          notifyListeners();
+        }
+      } else {
+        // Failed to get user ID
+        _isAuthenticated = false;
+        _currentUser = null;
+        _isInitialized = true;
+        _isLoading = false;
+        notifyListeners();
+      }
+    } else {
+      // Not authenticated
+      _isAuthenticated = false;
+      _currentUser = null;
+      _isInitialized = true;
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Sign in with email and password
+  Future<bool> signIn(String email, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Using the repository directly to ensure GoRouter's auth stream is triggered
+    final result = await _authRepository.signInWithEmailAndPassword(email, password);
+
+    return result.fold(
+      onSuccess: (user) {
+        _currentUser = user;
+        _isAuthenticated = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      },
+      onFailure: (failure) {
+        _errorMessage = failure.message;
+        _isAuthenticated = false;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
+  // Sign up with name, email and password
+  Future<bool> signUp(String name, String email, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Using the repository directly to ensure GoRouter's auth stream is triggered
+    final result = await _authRepository.signUpWithEmailAndPassword(email, password, name);
+
+    return result.fold(
+      onSuccess: (user) {
+        _currentUser = user;
+        _isAuthenticated = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      },
+      onFailure: (failure) {
+        _errorMessage = failure.message;
+        _isAuthenticated = false;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
+  // Sign out the current user
+  Future<bool> signOut() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Using the repository directly to ensure GoRouter's auth stream is triggered
+    final result = await _authRepository.signOut();
+
+    return result.fold(
+      onSuccess: (_) {
+        _currentUser = null;
+        _isAuthenticated = false;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      },
+      onFailure: (failure) {
+        _errorMessage = failure.message;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
+  // Reset password for an email
+  Future<bool> resetPassword(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _authRepository.resetPassword(email);
+
+    _isLoading = false;
+
+    return result.fold(
+      onSuccess: (_) {
+        notifyListeners();
+        return true;
+      },
+      onFailure: (failure) {
+        _errorMessage = failure.message;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
+  // Get current user ID
+  Future<String?> getCurrentUserId() async {
+    final result = await _authRepository.getCurrentUserId();
+
+    return result.fold(
+      onSuccess: (id) => id,
+      onFailure: (_) => null,
+    );
+  }
+
+  // Clear any error messages
+  void clearErrors() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+}
