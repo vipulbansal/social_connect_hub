@@ -82,8 +82,8 @@ class _SearchPageState extends State<SearchPage> {
           IconButton(icon: const Icon(Icons.search), onPressed: _performSearch),
         ],
       ),
-      body: Consumer2<SearchService,FriendService>(
-        builder: (context, searchService,friendService, child) {
+      body: Consumer2<SearchService, FriendService>(
+        builder: (context, searchService, friendService, child) {
           return Column(
             children: [
               if (searchService.isLoading)
@@ -130,28 +130,38 @@ class _SearchPageState extends State<SearchPage> {
                   : Expanded(
                     child: ListView.builder(
                       itemBuilder: (context, index) {
-                        final user =searchService.searchedUsers[index];
+                        final user = searchService.searchedUsers[index];
                         // Don't show current user in search results
                         if (currentUser != null && user.id == currentUser.id) {
                           return const SizedBox.shrink();
                         }
                         // Check if user is already a friend
-                        final isFriend = currentUser != null &&
+                        final isFriend =
+                            currentUser != null &&
                             currentUser.friendIds.contains(user.id);
+                        final requestAlreadySent = friendService.pendingRequests
+                            .any(
+                              (pendingRequest) =>
+                                  pendingRequest.toUserId == user.id,
+                            );
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.blue.shade100,
-                            backgroundImage: user.profilePicUrl != null
-                                ? NetworkImage(user.profilePicUrl!)
-                                : null,
-                            child: user.profilePicUrl == null
-                                ? Text(
-                              user.name.isNotEmpty
-                                  ? user.name[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(color: Colors.blue),
-                            )
-                                : null,
+                            backgroundImage:
+                                user.profilePicUrl != null
+                                    ? NetworkImage(user.profilePicUrl!)
+                                    : null,
+                            child:
+                                user.profilePicUrl == null
+                                    ? Text(
+                                      user.name.isNotEmpty
+                                          ? user.name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    )
+                                    : null,
                           ),
                           title: Text(user.name),
                           subtitle: Text(
@@ -159,40 +169,53 @@ class _SearchPageState extends State<SearchPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          trailing: isFriend
-                              ? ElevatedButton(
-                            onPressed: () async {
-                              try {
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            child: const Text('Message'),
-                          )
-                              : OutlinedButton(
-                            onPressed: () async {
-                              // Send friend request
-                              if (mounted) {
-                                bool sendFriendRequest=await friendService.sendFriendRequest(user.id);
-                                if(sendFriendRequest){
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Friend Request Sent Successfully'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            child: const Text('Add Friend'),
-                          ),
+                          trailing:
+                              requestAlreadySent
+                                  ? const Text('Request Sent',
+                              textAlign: TextAlign.start,)
+                                  : isFriend
+                                  ? ElevatedButton(
+                                    onPressed: () async {
+                                      try {} catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Error: ${e.toString()}',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: const Text('Message'),
+                                  )
+                                  : OutlinedButton(
+                                    onPressed: () async {
+                                      // Send friend request
+                                      if (mounted) {
+                                        bool sendFriendRequest =
+                                            await friendService
+                                                .sendFriendRequest(user.id);
+                                        if (sendFriendRequest) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Friend Request Sent Successfully',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: const Text('Add Friend'),
+                                  ),
                           onTap: () async {
                             // View user profile or start chat
                             if (isFriend) {
