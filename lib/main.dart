@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:social_connect_hub/core/di/firebase_service.dart';
 import 'package:social_connect_hub/core/themes/theme_provider.dart';
+import 'package:social_connect_hub/features/friends/services/friend_service.dart';
+import 'package:social_connect_hub/features/search/services/search_service.dart';
 import 'package:social_connect_hub/router.dart';
 
 import 'core/di/service_locator.dart';
@@ -40,6 +42,8 @@ class SocialConnectHubApp extends StatelessWidget {
       providers: [
         // Services
         ChangeNotifierProvider(create: (_) => locator<AuthService>()),
+        ChangeNotifierProvider(create: (_) => locator<SearchService>()),
+        ChangeNotifierProvider(create: (_) => locator<FriendService>()),
         ChangeNotifierProvider(create: (_) => locator<ThemeProvider>()),
       ],
       child: Consumer<ThemeProvider>(

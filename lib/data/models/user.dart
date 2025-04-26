@@ -72,6 +72,10 @@ class User {
   @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
   DateTime? lastActive;
 
+  @HiveField(17)
+  @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
+  DateTime updatedAt;
+
   User({
     required this.id,
     required this.name,
@@ -90,7 +94,9 @@ class User {
     this.status = UserStatus.offline,
     required this.createdAt,
     this.lastActive,
-  }) : pendingFriendRequestIds = pendingFriendRequestIds ?? [];
+    DateTime? updatedAt,
+  }) : pendingFriendRequestIds = pendingFriendRequestIds ?? [],
+        this.updatedAt = updatedAt ?? createdAt;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 

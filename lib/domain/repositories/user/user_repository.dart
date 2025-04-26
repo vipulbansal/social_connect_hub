@@ -5,4 +5,7 @@ import '../../entities/user/user_entity.dart';
 abstract class UserRepository {
   /// Get a user by ID
   Future<Result<UserEntity>> getUserById(String userId);
+
+  /// Search users by name or email
+  Future<Result<List<UserEntity>>> searchUsers(String query);
 }

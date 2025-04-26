@@ -34,13 +34,14 @@ class UserAdapter extends TypeAdapter<User> {
       status: fields[14] as UserStatus,
       createdAt: fields[15] as DateTime,
       lastActive: fields[16] as DateTime?,
+      updatedAt: fields[17] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -74,7 +75,9 @@ class UserAdapter extends TypeAdapter<User> {
       ..writeByte(15)
       ..write(obj.createdAt)
       ..writeByte(16)
-      ..write(obj.lastActive);
+      ..write(obj.lastActive)
+      ..writeByte(17)
+      ..write(obj.updatedAt);
   }
 
   @override
@@ -166,6 +169,7 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
           : User._userStatusFromJson(json['status']),
       createdAt: User._dateTimeFromJson(json['createdAt']),
       lastActive: User._dateTimeFromJson(json['lastActive']),
+      updatedAt: User._dateTimeFromJson(json['updatedAt']),
     );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -186,4 +190,5 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'status': User._userStatusToJson(instance.status),
       'createdAt': User._dateTimeToJson(instance.createdAt),
       'lastActive': User._dateTimeToJson(instance.lastActive),
+      'updatedAt': User._dateTimeToJson(instance.updatedAt),
     };

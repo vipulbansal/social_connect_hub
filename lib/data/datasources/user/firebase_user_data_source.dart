@@ -34,4 +34,47 @@ class FirebaseUserDataSource implements UserDataSource {
     }
   }
 
+  @override
+  Future<List<User>> searchUsers(String query)async {
+    try {
+      // Convert the query to lowercase for case-insensitive search
+      final queryLower = query.toLowerCase();
+      final nameSnap = await _firestore.collection('users').where(
+          'name', isGreaterThanOrEqualTo: queryLower )
+          .where('name', isLessThanOrEqualTo:'$queryLower\uf8ff')
+          .get();
+
+      final emailSnap = await _firestore.collection('users').where(
+          'email', isEqualTo: query)
+          .limit(5)
+          .get();
+
+      final nameResults = nameSnap.docs.map((doc) {
+        return User.fromJson({
+          'id': doc.id,
+          ...doc.data(),
+        });
+      }).toList();
+
+      final emailResults = emailSnap.docs.map((doc) {
+        return User.fromJson({
+          'id': doc.id,
+          ...doc.data(),
+        });
+      }).toList();
+
+      // Remove duplicates
+      final combinedResults = [...nameResults];
+      for (User user in emailResults) {
+        if (!combinedResults.any((u) => u.id == user.id)) {
+          combinedResults.add(user);
+        }
+      }
+      return combinedResults;
+    }
+    catch(e){
+      return [];
+    }
+  }
+
 }
