@@ -18,10 +18,10 @@ abstract class FriendRepository {
   Stream<List<FriendRequestEntity>> watchFriendRequests(String userId);
 
   /// Watch received friend requests for a user (stream)
-  Stream<List<FriendRequestEntity>> streamReceivedFriendRequests();
+  Stream<List<FriendRequestEntity>> streamReceivedFriendRequests(String userId,);
 
   /// Watch sent friend requests for a user (stream)
-  Stream<List<FriendRequestEntity>> streamSentFriendRequests();
+  Stream<Result<List<FriendRequestEntity>>> streamSentFriendRequests(String userId,);
 
   /// Reject a friend request
   Future<Result<void>> rejectFriendRequest(String requestId);

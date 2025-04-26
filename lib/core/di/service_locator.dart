@@ -11,6 +11,7 @@ import 'package:social_connect_hub/data/datasources/user/firebase_user_data_sour
 import 'package:social_connect_hub/data/repositories/friend/friend_repository_impl.dart';
 import 'package:social_connect_hub/domain/repositories/friend/friend_repository.dart';
 import 'package:social_connect_hub/domain/usecases/friend/send_friend_request_usecase.dart';
+import 'package:social_connect_hub/domain/usecases/friend/watch_sent_friend_requests_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/user/search_users_usecase.dart';
 import 'package:social_connect_hub/features/friends/services/friend_service.dart';
 import 'package:social_connect_hub/features/search/services/search_service.dart';
@@ -75,7 +76,7 @@ Future<void> setupServiceLocator() async {
   );
 
   locator.registerLazySingleton<FriendDataSource>(
-        () => FirebaseFriendDataSource(
+    () => FirebaseFriendDataSource(
       firebaseAuth: locator<FirebaseAuth>(),
       firestore: locator<FirebaseFirestore>(),
     ),
@@ -92,7 +93,7 @@ Future<void> setupServiceLocator() async {
   );
 
   locator.registerLazySingleton<FriendRepository>(
-        () => FriendRepositoryImpl(friendDataSource: locator<FriendDataSource>()),
+    () => FriendRepositoryImpl(friendDataSource: locator<FriendDataSource>()),
   );
 
   // Auth use cases
@@ -124,7 +125,11 @@ Future<void> setupServiceLocator() async {
 
   //friend use cases
   locator.registerFactory<SendFriendRequestUseCase>(
-        () => SendFriendRequestUseCase( locator<FriendRepository>()),
+    () => SendFriendRequestUseCase(locator<FriendRepository>()),
+  );
+
+  locator.registerFactory<WatchSentFriendRequestsUseCase>(
+    () => WatchSentFriendRequestsUseCase(locator<FriendRepository>()),
   );
 
   // Auth Service (initialize first as other components depend on it)
@@ -147,11 +152,12 @@ Future<void> setupServiceLocator() async {
   );
 
   locator.registerLazySingleton<FriendService>(
-        () => FriendService(
-          locator<FriendRepository>(),
-          locator<UserRepository>(),
-          locator<AuthRepository>(),
-          locator<SendFriendRequestUseCase>(),
+    () => FriendService(
+      locator<FriendRepository>(),
+      locator<UserRepository>(),
+      locator<AuthRepository>(),
+      locator<SendFriendRequestUseCase>(),
+      locator<WatchSentFriendRequestsUseCase>(),
     ),
   );
 

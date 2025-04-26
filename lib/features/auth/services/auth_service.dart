@@ -90,8 +90,21 @@ class AuthService extends ChangeNotifier {
           final userResult = await _userRepository.getUserById(userId);
 
           userResult.fold(
-              onSuccess: (user) {
+              onSuccess: (user) async {
                 _currentUser = user;
+
+                // Register FCM token for existing authenticated user on app start
+                try {
+                  final firebaseService = locator<FirebaseService>();
+                  final fcmToken = await firebaseService.messaging.getToken();
+                  if (fcmToken != null) {
+                    await firebaseService.updateFcmToken(user.id, fcmToken);
+                  }
+                } catch (e) {
+                  print('Error registering FCM token on app initialization: $e');
+                  // Continue even if token registration fails
+                }
+
                 _isInitialized = true;
                 _isLoading = false;
                 notifyListeners();
@@ -140,9 +153,22 @@ class AuthService extends ChangeNotifier {
     final result = await _authRepository.signInWithEmailAndPassword(email, password);
 
     return result.fold(
-      onSuccess: (user) {
+      onSuccess: (user) async {
         _currentUser = user;
         _isAuthenticated = true;
+
+        // Register the FCM token for the user
+        try {
+          final firebaseService = locator<FirebaseService>();
+          final fcmToken = await firebaseService.messaging.getToken();
+          if (fcmToken != null) {
+            await firebaseService.updateFcmToken(user.id, fcmToken);
+          }
+        } catch (e) {
+          print('Error registering FCM token: $e');
+          // Continue even if token registration fails
+        }
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -167,9 +193,22 @@ class AuthService extends ChangeNotifier {
     final result = await _authRepository.signUpWithEmailAndPassword(email, password, name);
 
     return result.fold(
-      onSuccess: (user) {
+      onSuccess: (user) async {
         _currentUser = user;
         _isAuthenticated = true;
+
+        // Register the FCM token for the newly created user
+        try {
+          final firebaseService = locator<FirebaseService>();
+          final fcmToken = await firebaseService.messaging.getToken();
+          if (fcmToken != null) {
+            await firebaseService.updateFcmToken(user.id, fcmToken);
+          }
+        } catch (e) {
+          print('Error registering FCM token for new user: $e');
+          // Continue even if token registration fails
+        }
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -189,6 +228,20 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
+    // Unregister the FCM token before signing out if we have a current user
+    if (_currentUser != null) {
+      try {
+        final firebaseService = locator<FirebaseService>();
+        final fcmToken = await firebaseService.messaging.getToken();
+        if (fcmToken != null) {
+          await firebaseService.removeFcmToken(_currentUser!.id, fcmToken);
+        }
+      } catch (e) {
+        print('Error unregistering FCM token: $e');
+        // Continue with signout even if token unregistration fails
+      }
+    }
 
     // Using the repository directly to ensure GoRouter's auth stream is triggered
     final result = await _authRepository.signOut();

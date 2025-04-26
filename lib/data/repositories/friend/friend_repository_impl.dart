@@ -151,27 +151,32 @@ class FriendRepositoryImpl implements FriendRepository {
   }
 
   @override
-  Stream<List<FriendRequestEntity>> streamReceivedFriendRequests() {
-    // Assuming we have a current user ID available
-    final userId = _getCurrentUserId();
+  Stream<List<FriendRequestEntity>> streamReceivedFriendRequests(String userId,) {
     return _friendDataSource.streamReceivedFriendRequests(userId)
         .map((requests) => requests.map(_mapToFriendRequestEntity).toList());
   }
 
   @override
-  Stream<List<FriendRequestEntity>> streamSentFriendRequests() {
-    // Assuming we have a current user ID available
-    final userId = _getCurrentUserId();
-    return _friendDataSource.streamSentFriendRequests(userId)
-        .map((requests) => requests.map(_mapToFriendRequestEntity).toList());
+  Stream<Result<List<FriendRequestEntity>>> streamSentFriendRequests(String userId) {
+    // Option 2: Using Stream transformation with error handling
+    try {
+      // We still need to handle errors that might occur in the stream events
+      return _friendDataSource.streamSentFriendRequests(userId)
+          .map<Result<List<FriendRequestEntity>>>((requests) {
+        try {
+          // Convert each event to a success Result
+          return Result.success(requests.map(_mapToFriendRequestEntity).toList());
+        } catch (e) {
+          // Handle errors during the mapping process
+          return Result.failure(FriendFailure(e.toString()));
+        }
+      });
+    } catch (e) {
+      // This only catches errors during stream creation, not during event emission
+      return Stream.value(Result.failure(FriendFailure(e.toString())));
+    }
   }
 
-  // Helper method to get current user ID
-  String _getCurrentUserId() {
-    // TODO: Implement proper way to get current user ID
-    // This is a temporary solution for demonstration
-    return 'current_user_id';
-  }
 
   // Helper method to map model to entity
   UserEntity _mapToUserEntity(User user) {
