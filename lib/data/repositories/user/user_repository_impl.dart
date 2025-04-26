@@ -31,6 +31,17 @@ class UserRepositoryImpl implements UserRepository {
     }
   }
 
+  @override
+  Future<Result<List<UserEntity>>> searchUsers(String query) async{
+    try {
+      final users = await _userDataSource.searchUsers(query);
+      final userEntities=users.map((user)=>_mapToUserEntity(user)).toList();
+      return Result.success(userEntities);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
   // Helper method to map data model to domain entity
   UserEntity _mapToUserEntity(app_models.User user) {
     return UserEntity(
@@ -62,5 +73,7 @@ class UserRepositoryImpl implements UserRepository {
       createdAt: entity.createdAt,
     );
   }
+
+
 
 }

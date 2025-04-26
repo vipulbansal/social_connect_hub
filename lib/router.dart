@@ -12,6 +12,7 @@ import 'features/auth/pages/register_page.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/home/pages/home_page.dart';
 import 'features/onboarding/pages/onboarding_page.dart';
+import 'features/search/pages/search_page.dart';
 import 'features/welcome/pages/welcome_page.dart';
 
 
@@ -99,6 +100,9 @@ class AppRouter{
           path: '/home',
           builder: (context, state) => const HomePage(),
         ),
-
+        GoRoute(
+          path: '/search',
+          builder: (context, state) => const SearchPage(),
+        ),
   ]);
 }

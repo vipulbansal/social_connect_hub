@@ -5,7 +5,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:social_connect_hub/core/themes/theme_provider.dart';
+import 'package:social_connect_hub/data/datasources/friend/firebase_friend_data_source.dart';
+import 'package:social_connect_hub/data/datasources/friend/friend_data_source.dart';
 import 'package:social_connect_hub/data/datasources/user/firebase_user_data_source.dart';
+import 'package:social_connect_hub/data/repositories/friend/friend_repository_impl.dart';
+import 'package:social_connect_hub/domain/repositories/friend/friend_repository.dart';
+import 'package:social_connect_hub/domain/usecases/friend/send_friend_request_usecase.dart';
+import 'package:social_connect_hub/domain/usecases/user/search_users_usecase.dart';
+import 'package:social_connect_hub/features/friends/services/friend_service.dart';
+import 'package:social_connect_hub/features/search/services/search_service.dart';
 
 import '../../data/datasources/auth/auth_data_source.dart';
 import '../../data/datasources/auth/firebase_auth_data_source.dart';
@@ -52,64 +60,99 @@ Future<void> setupServiceLocator() async {
   await locator<FirebaseService>().initialize();
 
   // Data Sources
-  locator.registerLazySingleton<AuthDataSource>(() => FirebaseAuthDataSource(
-    firebaseAuth: locator<FirebaseAuth>(),
-    firestore: locator<FirebaseFirestore>(),
-  ));
+  locator.registerLazySingleton<AuthDataSource>(
+    () => FirebaseAuthDataSource(
+      firebaseAuth: locator<FirebaseAuth>(),
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
 
-  locator.registerLazySingleton<UserDataSource>(() => FirebaseUserDataSource(
-    firebaseAuth: locator<FirebaseAuth>(),
-    firestore: locator<FirebaseFirestore>(),
-  ));
+  locator.registerLazySingleton<UserDataSource>(
+    () => FirebaseUserDataSource(
+      firebaseAuth: locator<FirebaseAuth>(),
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
 
+  locator.registerLazySingleton<FriendDataSource>(
+        () => FirebaseFriendDataSource(
+      firebaseAuth: locator<FirebaseAuth>(),
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
 
   // App services
   // Repositories
   locator.registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(
-      authDataSource: locator<AuthDataSource>(),
-    ),
+    () => AuthRepositoryImpl(authDataSource: locator<AuthDataSource>()),
   );
 
-
   locator.registerLazySingleton<UserRepository>(
-        () => UserRepositoryImpl(
-      userDataSource: locator<UserDataSource>(),
-    ),
+    () => UserRepositoryImpl(userDataSource: locator<UserDataSource>()),
+  );
+
+  locator.registerLazySingleton<FriendRepository>(
+        () => FriendRepositoryImpl(friendDataSource: locator<FriendDataSource>()),
   );
 
   // Auth use cases
   locator.registerLazySingleton<SignInUseCase>(
-        () => SignInUseCase(locator<AuthRepository>()),
+    () => SignInUseCase(locator<AuthRepository>()),
   );
 
   locator.registerFactory<SignUpUseCase>(
-        () => SignUpUseCase(locator<AuthRepository>()),
+    () => SignUpUseCase(locator<AuthRepository>()),
   );
 
   locator.registerFactory<SignOutUseCase>(
-        () => SignOutUseCase(locator<AuthRepository>()),
+    () => SignOutUseCase(locator<AuthRepository>()),
   );
 
   locator.registerFactory<ResetPasswordUseCase>(
-        () => ResetPasswordUseCase(locator<AuthRepository>()),
+    () => ResetPasswordUseCase(locator<AuthRepository>()),
   );
 
   // User use cases
   locator.registerFactory<GetUserByIdUseCase>(
-        () => GetUserByIdUseCase(locator<UserRepository>()),
+    () => GetUserByIdUseCase(locator<UserRepository>()),
+  );
+
+  // User use cases
+  locator.registerFactory<SearchUsersUsecase>(
+    () => SearchUsersUsecase(userRepository: locator<UserRepository>()),
+  );
+
+  //friend use cases
+  locator.registerFactory<SendFriendRequestUseCase>(
+        () => SendFriendRequestUseCase( locator<FriendRepository>()),
   );
 
   // Auth Service (initialize first as other components depend on it)
   locator.registerLazySingleton<AuthService>(
-        () => AuthService(
-          authRepository: locator<AuthRepository>(),
-          userRepository: locator<UserRepository>(),
-          signInUseCase: locator<SignInUseCase>(),
-          signUpUseCase: locator<SignUpUseCase>(),
-          signOutUseCase: locator<SignOutUseCase>(),
-          resetPasswordUseCase: locator<ResetPasswordUseCase>(),
-        ),
+    () => AuthService(
+      authRepository: locator<AuthRepository>(),
+      userRepository: locator<UserRepository>(),
+      signInUseCase: locator<SignInUseCase>(),
+      signUpUseCase: locator<SignUpUseCase>(),
+      signOutUseCase: locator<SignOutUseCase>(),
+      resetPasswordUseCase: locator<ResetPasswordUseCase>(),
+    ),
+  );
+
+  locator.registerLazySingleton<SearchService>(
+    () => SearchService(
+      userRepository: locator<UserRepository>(),
+      searchUsersUsecase: locator<SearchUsersUsecase>(),
+    ),
+  );
+
+  locator.registerLazySingleton<FriendService>(
+        () => FriendService(
+          locator<FriendRepository>(),
+          locator<UserRepository>(),
+          locator<AuthRepository>(),
+          locator<SendFriendRequestUseCase>(),
+    ),
   );
 
   locator.registerLazySingleton<ThemeProvider>(() => ThemeProvider());
