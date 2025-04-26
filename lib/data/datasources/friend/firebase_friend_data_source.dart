@@ -189,7 +189,7 @@ class FirebaseFriendDataSource implements FriendDataSource {
         'senderId': senderId,
         'receiverId': receiverId,
         'status': 'pending',
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': DateTime.now(),
       };
 
       final docRef = await _firestore.collection('friendRequests').add(requestData);
@@ -225,7 +225,7 @@ class FirebaseFriendDataSource implements FriendDataSource {
       // Update the friend request status
       await _firestore.collection('friendRequests').doc(requestId).update({
         'status': 'accepted',
-        'acceptedAt': FieldValue.serverTimestamp(),
+        'acceptedAt': DateTime.now(),
       });
 
       // Run a batch write to update both users' friends lists
@@ -258,7 +258,7 @@ class FirebaseFriendDataSource implements FriendDataSource {
     try {
       await _firestore.collection('friendRequests').doc(requestId).update({
         'status': 'rejected',
-        'rejectedAt': FieldValue.serverTimestamp(),
+        'rejectedAt': DateTime.now(),
       });
 
       return true;
@@ -273,7 +273,7 @@ class FirebaseFriendDataSource implements FriendDataSource {
     try {
       await _firestore.collection('friendRequests').doc(requestId).update({
         'status': 'cancelled',
-        'cancelledAt': FieldValue.serverTimestamp(),
+        'cancelledAt': DateTime.now(),
       });
 
       return true;
@@ -398,7 +398,7 @@ class FirebaseFriendDataSource implements FriendDataSource {
         .collection('friendRequests')
         .where('receiverId', isEqualTo: userId)
         .where('status', isEqualTo: 'pending')
-        .orderBy('timestamp', descending: true)
+//        .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
         .map((doc) => FriendRequest.fromJson({
