@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:social_connect_hub/domain/usecases/friend/send_friend_request_usecase.dart';
+import 'package:social_connect_hub/domain/usecases/friend/watch_received_friend_requests_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/friend/watch_sent_friend_requests_usecase.dart';
 
 import '../../../domain/entities/friend/friend_request_entity.dart';
@@ -16,29 +17,44 @@ class FriendService extends ChangeNotifier {
   final AuthRepository _authRepository;
   final SendFriendRequestUseCase sendFriendRequestUseCase;
   final WatchSentFriendRequestsUseCase watchSentFriendRequestsUseCase;
-  List<FriendRequestEntity> _pendingRequests = [];
+  final WatchReceivedFriendRequestsUsecase watchReceivedFriendRequestsUseCase;
+  List<FriendRequestEntity> _pendingSentRequests = [];
+  List<FriendRequestEntity> _pendingReceivedRequests = [];
   bool _isLoading = false;
   String? _errorMessage;
   StreamSubscription? _sentRequestsSubscription;
+  StreamSubscription? _receivedRequestsSubscription;
 
 
-  List<FriendRequestEntity> get pendingRequests => _pendingRequests;
+  List<FriendRequestEntity> get pendingRequests => _pendingSentRequests;
+
+
+  List<FriendRequestEntity> get pendingReceivedRequests =>
+      _pendingReceivedRequests;
 
   FriendService(this._friendRepository, this._userRepository,
-      this._authRepository, this.sendFriendRequestUseCase, this.watchSentFriendRequestsUseCase){
+      this._authRepository, this.sendFriendRequestUseCase, this.watchSentFriendRequestsUseCase,
+      this.watchReceivedFriendRequestsUseCase){
     init();
   }
 
   init(){
     _sentRequestsSubscription = watchSentFriendRequests().listen((requests) {
-      _pendingRequests = requests;
+      _pendingSentRequests = requests;
       notifyListeners();
     });
+
+    _receivedRequestsSubscription = watchReceivedFriendRequests().listen((requests) {
+      _pendingReceivedRequests = requests;
+      notifyListeners();
+    });
+
   }
 
   @override
   void dispose() {
     _sentRequestsSubscription?.cancel();
+    _receivedRequestsSubscription?.cancel();
     super.dispose();
   }
 
@@ -98,12 +114,10 @@ class FriendService extends ChangeNotifier {
   // Stream Sent friend requests for the current user
   Stream<List<FriendRequestEntity>> watchSentFriendRequests() async* {
     final currentUserResult = await _authRepository.getCurrentUserId();
-
     if (currentUserResult.isFailure) {
       yield [];
       return;
     }
-
     final userId = currentUserResult.fold(
       onSuccess: (id) => id,
       onFailure: (_) => '',
@@ -121,11 +135,36 @@ class FriendService extends ChangeNotifier {
       yield result.fold(
         onSuccess: (requests) {
           // Store the pending requests for future use if needed
-          _pendingRequests = requests;
+          _pendingSentRequests = requests;
           return requests;
         },
         onFailure: (_) => <FriendRequestEntity>[],
       );
+    }
+  }
+
+  // Stream Sent friend requests for the current user
+  Stream<List<FriendRequestEntity>> watchReceivedFriendRequests() async* {
+    final currentUserResult = await _authRepository.getCurrentUserId();
+    if (currentUserResult.isFailure) {
+      yield [];
+      return;
+    }
+    final userId = currentUserResult.fold(
+      onSuccess: (id) => id,
+      onFailure: (_) => '',
+    );
+
+    if (userId.isEmpty) {
+      yield [];
+      return;
+    }
+
+    final requestsStream =watchReceivedFriendRequestsUseCase(userId);
+
+    await for (final result in requestsStream) {
+      // Use fold to handle success and failure cases
+      yield result;
     }
   }
 

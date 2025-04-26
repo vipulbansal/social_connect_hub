@@ -11,6 +11,7 @@ import 'package:social_connect_hub/data/datasources/user/firebase_user_data_sour
 import 'package:social_connect_hub/data/repositories/friend/friend_repository_impl.dart';
 import 'package:social_connect_hub/domain/repositories/friend/friend_repository.dart';
 import 'package:social_connect_hub/domain/usecases/friend/send_friend_request_usecase.dart';
+import 'package:social_connect_hub/domain/usecases/friend/watch_received_friend_requests_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/friend/watch_sent_friend_requests_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/user/search_users_usecase.dart';
 import 'package:social_connect_hub/features/friends/services/friend_service.dart';
@@ -132,6 +133,10 @@ Future<void> setupServiceLocator() async {
     () => WatchSentFriendRequestsUseCase(locator<FriendRepository>()),
   );
 
+  locator.registerFactory<WatchReceivedFriendRequestsUsecase>(
+    () => WatchReceivedFriendRequestsUsecase(locator<FriendRepository>()),
+  );
+
   // Auth Service (initialize first as other components depend on it)
   locator.registerLazySingleton<AuthService>(
     () => AuthService(
@@ -158,6 +163,7 @@ Future<void> setupServiceLocator() async {
       locator<AuthRepository>(),
       locator<SendFriendRequestUseCase>(),
       locator<WatchSentFriendRequestsUseCase>(),
+      locator<WatchReceivedFriendRequestsUsecase>(),
     ),
   );
 
