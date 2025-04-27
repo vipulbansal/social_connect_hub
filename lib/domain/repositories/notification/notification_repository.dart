@@ -13,7 +13,7 @@ abstract class NotificationRepository {
   Future<Result<List<NotificationEntity>>> getUserNotifications(String userId);
   
   /// Stream notifications for a user
-  Stream<Result<List<NotificationEntity>>> watchUserNotifications(String userId);
+  Stream<List<NotificationEntity>> watchUserNotifications(String userId);
   
   /// Mark a notification as read
   Future<Result<void>> markNotificationAsRead(String notificationId);

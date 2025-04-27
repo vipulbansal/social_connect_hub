@@ -4,9 +4,9 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:social_connect_hub/core/di/firebase_service.dart';
 import 'package:social_connect_hub/domain/core/usecase.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../data/models/user.dart' as app_user;
 import '../../../domain/entities/user/user_entity.dart';
 import '../../../domain/repositories/auth/auth_repository.dart';
