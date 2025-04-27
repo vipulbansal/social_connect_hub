@@ -30,7 +30,9 @@ import '../../domain/usecases/auth/sign_out_usecase.dart';
 import '../../domain/usecases/auth/sign_up_usecase.dart';
 import '../../domain/usecases/user/get_user_by_id_usecase.dart';
 import '../../features/auth/services/auth_service.dart';
-import 'firebase_service.dart';
+import '../services/firebase_service.dart';
+import '../services/local_notification_service.dart';
+
 
 final GetIt locator = GetIt.instance;
 final GetIt serviceLocator = locator; // Alias for convenience
@@ -58,8 +60,15 @@ Future<void> setupServiceLocator() async {
       messaging: locator<FirebaseMessaging>(),
     ),
   );
+
+  // Local Notification Service
+  locator.registerLazySingleton<LocalNotificationService>(() => LocalNotificationService());
+
   // Initialize Firebase
   await locator<FirebaseService>().initialize();
+
+  // Initialize Local Notifications
+  await locator<LocalNotificationService>().initialize();
 
   // Data Sources
   locator.registerLazySingleton<AuthDataSource>(
