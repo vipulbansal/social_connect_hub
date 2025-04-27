@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:jose/jose.dart';
+import '../../../secrets.dart';
 import '../../models/app_notification.dart';
 import 'notification_data_source.dart';
 
@@ -122,6 +124,8 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
   }
 
 
+
+
   Future<void> _sendPushToDevice(
       String deviceToken,
       String title,
@@ -134,7 +138,7 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
       final String fcmEndpoint = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
 
       // Replace with your generated access token
-      const String accessToken = '';
+       String? accessToken = await _generateAccessToken();
 
       final Map<String, dynamic> payload = {
         'message': {
@@ -349,4 +353,53 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
+
+
+  Future<String?> _generateAccessToken() async {
+    try {
+      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final exp = iat + 3600; // 1 hour expiry
+
+      final claims = {
+        'iss': clientEmail,
+        'scope': 'https://www.googleapis.com/auth/firebase.messaging',
+        'aud': tokenUri,
+        'exp': exp,
+        'iat': iat,
+      };
+
+      final builder = JsonWebSignatureBuilder()
+        ..jsonContent = claims
+        ..addRecipient(
+          JsonWebKey.fromPem(privateKey),
+          algorithm: 'RS256',
+        );
+
+      final jwt = builder.build().toCompactSerialization();
+
+      final response = await http.post(
+        Uri.parse(tokenUri),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          'assertion': jwt,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['access_token'];
+      } else {
+        print('Failed to generate access token. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Error generating access token: $e');
+      return null;
+    }
+  }
+
 }

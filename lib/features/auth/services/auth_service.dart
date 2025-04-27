@@ -43,7 +43,8 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Constructor - can be called without dependencies which will be
+  UserRepository get userRepository =>
+      _userRepository; // Constructor - can be called without dependencies which will be
   // fetched from service locator, or with explicit dependencies for testing
   AuthService({
     AuthRepository? authRepository,
