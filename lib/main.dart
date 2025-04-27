@@ -15,6 +15,7 @@ import 'core/di/service_locator.dart';
 import 'core/services/firebase_service.dart';
 import 'core/themes/app_theme.dart';
 import 'features/auth/services/auth_service.dart';
+import 'features/notification/services/notification_service.dart';
 import 'firebase_options.dart';
 
 void main()async {
@@ -30,7 +31,8 @@ void main()async {
   // Initialize Hive for local storage
   var path = Directory.current.path;
   Hive.init(path);
-
+  final notificationService = locator<NotificationService>();
+  await notificationService.requestNotificationPermissions();
   runApp(SocialConnectHubApp(seenOnboarding: seenOnboarding));
 }
 
@@ -50,10 +52,8 @@ class SocialConnectHubApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => locator<AuthService>()),
         ChangeNotifierProvider(create: (_) => locator<SearchService>()),
         ChangeNotifierProvider(create: (_) => locator<FriendService>()),
+        ChangeNotifierProvider(create: (_) => locator<NotificationService>()),
         ChangeNotifierProvider(create: (_) => locator<ThemeProvider>()),
-        ChangeNotifierProvider<NotificationService>(
-          create: (_) => locator<NotificationService>(),
-        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

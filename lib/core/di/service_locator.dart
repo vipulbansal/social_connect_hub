@@ -7,20 +7,27 @@ import 'package:get_it/get_it.dart';
 import 'package:social_connect_hub/core/themes/theme_provider.dart';
 import 'package:social_connect_hub/data/datasources/friend/firebase_friend_data_source.dart';
 import 'package:social_connect_hub/data/datasources/friend/friend_data_source.dart';
+import 'package:social_connect_hub/data/datasources/notification/firebase_notification_data_source.dart';
+import 'package:social_connect_hub/data/datasources/notification/notification_data_source.dart';
 import 'package:social_connect_hub/data/datasources/user/firebase_user_data_source.dart';
 import 'package:social_connect_hub/data/repositories/friend/friend_repository_impl.dart';
 import 'package:social_connect_hub/domain/repositories/friend/friend_repository.dart';
+import 'package:social_connect_hub/domain/repositories/notification/notification_repository.dart';
 import 'package:social_connect_hub/domain/usecases/friend/send_friend_request_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/friend/watch_received_friend_requests_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/friend/watch_sent_friend_requests_usecase.dart';
+import 'package:social_connect_hub/domain/usecases/notification/send_push_notification_usecase.dart';
+import 'package:social_connect_hub/domain/usecases/notification/watch_user_notifications_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/user/search_users_usecase.dart';
 import 'package:social_connect_hub/features/friends/services/friend_service.dart';
+import 'package:social_connect_hub/features/notification/services/notification_service.dart';
 import 'package:social_connect_hub/features/search/services/search_service.dart';
 
 import '../../data/datasources/auth/auth_data_source.dart';
 import '../../data/datasources/auth/firebase_auth_data_source.dart';
 import '../../data/datasources/user/user_data_source.dart';
 import '../../data/repositories/auth/auth_repository_impl.dart';
+import '../../data/repositories/notification/notification_repository_impl.dart';
 import '../../data/repositories/user/user_repository_impl.dart';
 import '../../domain/repositories/auth/auth_repository.dart';
 import '../../domain/repositories/user/user_repository.dart';
@@ -28,11 +35,11 @@ import '../../domain/usecases/auth/reset_password_usecase.dart';
 import '../../domain/usecases/auth/sign_in_usecase.dart';
 import '../../domain/usecases/auth/sign_out_usecase.dart';
 import '../../domain/usecases/auth/sign_up_usecase.dart';
+import '../../domain/usecases/notification/mark_notification_as_read_usecase.dart';
 import '../../domain/usecases/user/get_user_by_id_usecase.dart';
 import '../../features/auth/services/auth_service.dart';
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-
 
 final GetIt locator = GetIt.instance;
 final GetIt serviceLocator = locator; // Alias for convenience
@@ -62,7 +69,9 @@ Future<void> setupServiceLocator() async {
   );
 
   // Local Notification Service
-  locator.registerLazySingleton<LocalNotificationService>(() => LocalNotificationService());
+  locator.registerLazySingleton<LocalNotificationService>(
+    () => LocalNotificationService(),
+  );
 
   // Initialize Firebase
   await locator<FirebaseService>().initialize();
@@ -92,6 +101,14 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
+  locator.registerLazySingleton<NotificationDataSource>(
+    () => FirebaseNotificationDataSource(
+      firebaseAuth: locator<FirebaseAuth>(),
+      firestore: locator<FirebaseFirestore>(),
+      messaging: locator<FirebaseMessaging>(),
+    ),
+  );
+
   // App services
   // Repositories
   locator.registerLazySingleton<AuthRepository>(
@@ -104,6 +121,10 @@ Future<void> setupServiceLocator() async {
 
   locator.registerLazySingleton<FriendRepository>(
     () => FriendRepositoryImpl(friendDataSource: locator<FriendDataSource>()),
+  );
+
+  locator.registerLazySingleton<NotificationRepository>(
+        () => NotificationRepositoryImpl(notificationDataSource: locator<NotificationDataSource>()),
   );
 
   // Auth use cases
@@ -146,6 +167,19 @@ Future<void> setupServiceLocator() async {
     () => WatchReceivedFriendRequestsUsecase(locator<FriendRepository>()),
   );
 
+
+  locator.registerFactory<SendPushNotificationUseCase>(
+        () => SendPushNotificationUseCase(locator<NotificationRepository>()),
+  );
+
+  locator.registerFactory<MarkNotificationAsReadUseCase>(
+        () => MarkNotificationAsReadUseCase(locator<NotificationRepository>()),
+  );
+
+  locator.registerFactory<WatchUserNotificationsUseCase>(
+        () => WatchUserNotificationsUseCase(locator<NotificationRepository>()),
+  );
+
   // Auth Service (initialize first as other components depend on it)
   locator.registerLazySingleton<AuthService>(
     () => AuthService(
@@ -165,6 +199,17 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
+  locator.registerLazySingleton<NotificationService>(
+        () => NotificationService(
+        notificationRepository:   locator<NotificationRepository>(),
+        authRepository: locator<AuthRepository>(),
+        sendPushNotificationUseCase: locator<SendPushNotificationUseCase>(),
+        markNotificationAsReadUseCase: locator<MarkNotificationAsReadUseCase>(),
+        watchUserNotificationsUseCase: locator<WatchUserNotificationsUseCase>()
+    ),
+  );
+
+
   locator.registerLazySingleton<FriendService>(
     () => FriendService(
       locator<FriendRepository>(),
@@ -173,8 +218,11 @@ Future<void> setupServiceLocator() async {
       locator<SendFriendRequestUseCase>(),
       locator<WatchSentFriendRequestsUseCase>(),
       locator<WatchReceivedFriendRequestsUsecase>(),
+      locator<NotificationService>()
     ),
   );
+
+
 
   locator.registerLazySingleton<ThemeProvider>(() => ThemeProvider());
 }

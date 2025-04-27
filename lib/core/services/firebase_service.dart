@@ -213,18 +213,60 @@ class FirebaseService {
 }
 
 /// Background message handler
+/// Background message handler
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Need to initialize Firebase in background handler as well
   try {
+    // Important: Firebase must be initialized
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    
+
     print('Handling a background message: ${message.messageId}');
     print('Message data: ${message.data}');
-    
-    if (message.notification != null) {
-      print('Message also contained a notification: ${message.notification}');
+
+    final localNotificationService = locator<LocalNotificationService>();
+
+    // Extract notification details
+    final title = message.notification?.title ?? 'New Notification';
+    final body = message.notification?.body ?? '';
+    final notificationType = message.data['type'] ?? 'unknown';
+    final senderId = message.data['senderId'] ?? '';
+    final senderName = message.data['senderName'] ?? 'Someone';
+    final chatId = message.data['chatId'];
+
+    switch (notificationType) {
+      case 'friend_request':
+        await localNotificationService.showFriendRequestNotification(
+          senderId: senderId,
+          senderName: senderName,
+        );
+        break;
+
+      case 'friend_accept':
+        await localNotificationService.showNotification(
+          id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+          title: 'Friend Request Accepted',
+          body: '$senderName accepted your friend request',
+          payload: 'friend_accepted_$senderId',
+        );
+        break;
+
+      case 'message':
+        await localNotificationService.showMessageNotification(
+          senderId: senderId,
+          senderName: senderName,
+          message: body,
+          chatId: chatId,
+        );
+        break;
+
+      default:
+        await localNotificationService.showNotification(
+          id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+          title: title,
+          body: body,
+          payload: notificationType,
+        );
     }
   } catch (e) {
     print('Error in background handler: $e');
