@@ -236,11 +236,17 @@ class FirebaseFriendDataSource implements FriendDataSource {
       batch.update(senderRef, {
         'friends': FieldValue.arrayUnion([receiverId]),
       });
+      batch.update(senderRef, {
+        'friendIds': FieldValue.arrayUnion([receiverId]),
+      });
 
       // Update receiver's friends list
       final receiverRef = _firestore.collection('users').doc(receiverId);
       batch.update(receiverRef, {
         'friends': FieldValue.arrayUnion([senderId]),
+      });
+      batch.update(receiverRef, {
+        'friendIds': FieldValue.arrayUnion([senderId]),
       });
 
       // Commit the batch
@@ -294,11 +300,17 @@ class FirebaseFriendDataSource implements FriendDataSource {
       batch.update(userRef, {
         'friends': FieldValue.arrayRemove([friendId]),
       });
+      batch.update(userRef, {
+        'friendIds': FieldValue.arrayRemove([friendId]),
+      });
 
       // Update friend's friends list
       final friendRef = _firestore.collection('users').doc(friendId);
       batch.update(friendRef, {
         'friends': FieldValue.arrayRemove([userId]),
+      });
+      batch.update(friendRef, {
+        'friendIds': FieldValue.arrayRemove([userId]),
       });
 
       // Commit the batch

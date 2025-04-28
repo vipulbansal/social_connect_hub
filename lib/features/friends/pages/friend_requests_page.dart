@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_connect_hub/domain/entities/user/user_entity.dart';
+
 // Removed BLoC imports as we're using Provider for state management
 import '../../../data/models/friend_request.dart' as model;
 import '../../../data/models/user.dart';
@@ -9,13 +10,14 @@ import '../../../domain/entities/friend/friend_request_entity.dart' as entity;
 import '../../../features/friends/services/friend_service.dart';
 import '../../../features/auth/services/auth_service.dart';
 
-
 // Helper method to convert FriendRequestEntity to FriendRequest
-model.FriendRequest _convertToFriendRequest(entity.FriendRequestEntity entityObj) {
+model.FriendRequest _convertToFriendRequest(
+  entity.FriendRequestEntity entityObj,
+) {
   return model.FriendRequest(
     id: entityObj.id,
-    senderId: entityObj.senderId,
-    receiverId: entityObj.recipientId,
+    senderId: entityObj.fromUserId,
+    receiverId: entityObj.toUserId,
     status: _convertStatus(entityObj.status),
     createdAt: entityObj.createdAt,
     updatedAt: entityObj.updatedAt,
@@ -23,15 +25,15 @@ model.FriendRequest _convertToFriendRequest(entity.FriendRequestEntity entityObj
 }
 
 // Helper method to convert status
-model.FriendRequestStatus _convertStatus(entity.FriendRequestStatus status) {
+model.FriendRequestStatus _convertStatus(String status) {
   switch (status) {
-    case entity.FriendRequestStatus.pending:
+    case "pending":
       return model.FriendRequestStatus.pending;
-    case entity.FriendRequestStatus.accepted:
+    case "accepted":
       return model.FriendRequestStatus.accepted;
-    case entity.FriendRequestStatus.rejected:
+    case "rejected":
       return model.FriendRequestStatus.rejected;
-    case entity.FriendRequestStatus.cancelled:
+    case "cancelled":
       return model.FriendRequestStatus.canceled;
     default:
       return model.FriendRequestStatus.pending;
@@ -39,7 +41,9 @@ model.FriendRequestStatus _convertStatus(entity.FriendRequestStatus status) {
 }
 
 // Helper function to convert list of entities to list of models
-List<model.FriendRequest> _convertFriendRequestList(List<entity.FriendRequestEntity> entities) {
+List<model.FriendRequest> _convertFriendRequestList(
+  List<entity.FriendRequestEntity> entities,
+) {
   return entities.map(_convertToFriendRequest).toList();
 }
 
@@ -50,7 +54,8 @@ class FriendRequestsPage extends StatefulWidget {
   State<FriendRequestsPage> createState() => _FriendRequestsPageState();
 }
 
-class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTickerProviderStateMixin {
+class _FriendRequestsPageState extends State<FriendRequestsPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
 
@@ -70,30 +75,29 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final userResult = await authService.userRepository.getUserById(userId);
-      
+
       if (userResult.isFailure) {
         return null;
-      }
-      else {
+      } else {
         var userEntity;
         userResult.fold(
-            onSuccess: (success) => userEntity=success, onFailure: (failure) => failure);
+          onSuccess: (success) => userEntity = success,
+          onFailure: (failure) => failure,
+        );
         // Convert UserEntity to User model
-          return User(
-            id: userEntity.id,
-            email: userEntity.email,
-            name: userEntity.name,
-            profilePicUrl: userEntity.avatarUrl,
-            bio: userEntity.bio ?? '',
-            createdAt: userEntity.createdAt,
-            lastActive: userEntity.lastSeen,
-            status: userEntity.isOnline ? UserStatus.online : UserStatus
-                .offline,
-            phoneNumber: userEntity.phoneNumber,
-            fcmTokens: userEntity.fcmToken != null ? [userEntity.fcmToken!] : [
-            ],
-            friendIds: userEntity.friends,
-          );
+        return User(
+          id: userEntity.id,
+          email: userEntity.email,
+          name: userEntity.name,
+          profilePicUrl: userEntity.avatarUrl,
+          bio: userEntity.bio ?? '',
+          createdAt: userEntity.createdAt,
+          lastActive: userEntity.lastSeen,
+          status: userEntity.isOnline ? UserStatus.online : UserStatus.offline,
+          phoneNumber: userEntity.phoneNumber,
+          fcmTokens: userEntity.fcmToken != null ? [userEntity.fcmToken!] : [],
+          friendIds: userEntity.friends,
+        );
       }
     } catch (e) {
       debugPrint('Error getting user details: $e');
@@ -101,7 +105,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
     }
   }
 
-  Future<void> _acceptFriendRequest(model.FriendRequest request) async {
+  Future<void> _acceptFriendRequest(entity.FriendRequestEntity request) async {
     setState(() {
       _isLoading = true;
     });
@@ -122,7 +126,9 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
           final errorMessage = friendService.errorMessage;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to accept friend request: ${errorMessage ?? "Unknown error"}'),
+              content: Text(
+                'Failed to accept friend request: ${errorMessage ?? "Unknown error"}',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -131,10 +137,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -146,7 +149,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
     }
   }
 
-  Future<void> _rejectFriendRequest(model.FriendRequest request) async {
+  Future<void> _rejectFriendRequest(entity.FriendRequestEntity request) async {
     setState(() {
       _isLoading = true;
     });
@@ -167,7 +170,9 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
           final errorMessage = friendService.errorMessage;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to reject friend request: ${errorMessage ?? "Unknown error"}'),
+              content: Text(
+                'Failed to reject friend request: ${errorMessage ?? "Unknown error"}',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -176,10 +181,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -198,37 +200,33 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> with SingleTick
         title: const Text('Friend Requests'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Received'),
-            Tab(text: 'Sent'),
-          ],
+          tabs: const [Tab(text: 'Received'), Tab(text: 'Sent')],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                // Received requests tab
-                _ReceivedRequestsTab(
-                  onAccept: _acceptFriendRequest,
-                  onReject: _rejectFriendRequest,
-                  getUserDetails: _getUserDetails,
-                ),
-                
-                // Sent requests tab
-                _SentRequestsTab(
-                  getUserDetails: _getUserDetails,
-                ),
-              ],
-            ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  // Received requests tab
+                  _ReceivedRequestsTab(
+                    onAccept: _acceptFriendRequest,
+                    onReject: _rejectFriendRequest,
+                    getUserDetails: _getUserDetails,
+                  ),
+
+                  // Sent requests tab
+                  _SentRequestsTab(getUserDetails: _getUserDetails),
+                ],
+              ),
     );
   }
 }
 
 class _ReceivedRequestsTab extends StatelessWidget {
-  final Function(model.FriendRequest) onAccept;
-  final Function(model.FriendRequest) onReject;
+  final Function(entity.FriendRequestEntity) onAccept;
+  final Function(entity.FriendRequestEntity) onReject;
   final Future<User?> Function(String) getUserDetails;
 
   const _ReceivedRequestsTab({
@@ -242,19 +240,17 @@ class _ReceivedRequestsTab extends StatelessWidget {
     return Consumer<FriendService>(
       builder: (context, friendService, child) {
         // Stream the received requests from the service
-        return StreamBuilder<List<model.FriendRequest>>(
-          stream: friendService.getReceivedFriendRequests(),
+        return StreamBuilder<List<entity.FriendRequestEntity>>(
+          stream: friendService.watchReceivedFriendRequests(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            
+
             if (snapshot.hasError) {
-              return Center(
-                child: Text('Error: ${snapshot.error}'),
-              );
+              return Center(child: Text('Error: ${snapshot.error}'));
             }
-            
+
             final receivedRequests = snapshot.data ?? [];
 
             if (receivedRequests.isEmpty) {
@@ -290,9 +286,9 @@ class _ReceivedRequestsTab extends StatelessWidget {
               itemCount: receivedRequests.length,
               itemBuilder: (context, index) {
                 final request = receivedRequests[index];
-                
+
                 return FutureBuilder<User?>(
-                  future: getUserDetails(request.senderId),
+                  future: getUserDetails(request.fromUserId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const ListTile(
@@ -307,9 +303,7 @@ class _ReceivedRequestsTab extends StatelessWidget {
                     final user = snapshot.data;
                     if (user == null) {
                       return const ListTile(
-                        leading: CircleAvatar(
-                          child: Icon(Icons.error),
-                        ),
+                        leading: CircleAvatar(child: Icon(Icons.error)),
                         title: Text('Unknown user'),
                         subtitle: Text('Could not load user details'),
                       );
@@ -318,17 +312,19 @@ class _ReceivedRequestsTab extends StatelessWidget {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.blue.shade100,
-                        backgroundImage: user.profilePicUrl != null
-                            ? NetworkImage(user.profilePicUrl!)
-                            : null,
-                        child: user.profilePicUrl == null
-                            ? Text(
-                                user.name.isNotEmpty
-                                    ? user.name[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(color: Colors.blue),
-                              )
-                            : null,
+                        backgroundImage:
+                            user.profilePicUrl != null
+                                ? NetworkImage(user.profilePicUrl!)
+                                : null,
+                        child:
+                            user.profilePicUrl == null
+                                ? Text(
+                                  user.name.isNotEmpty
+                                      ? user.name[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(color: Colors.blue),
+                                )
+                                : null,
                       ),
                       title: Text(user.name),
                       subtitle: Text(
@@ -368,27 +364,23 @@ class _ReceivedRequestsTab extends StatelessWidget {
 class _SentRequestsTab extends StatelessWidget {
   final Future<User?> Function(String) getUserDetails;
 
-  const _SentRequestsTab({
-    required this.getUserDetails,
-  });
+  const _SentRequestsTab({required this.getUserDetails});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<FriendService>(
       builder: (context, friendService, child) {
-        return StreamBuilder<List<model.FriendRequest>>(
-          stream: friendService.getSentFriendRequests(),
+        return StreamBuilder<List<entity.FriendRequestEntity>>(
+          stream: friendService.watchSentFriendRequests(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            
+
             if (snapshot.hasError) {
-              return Center(
-                child: Text('Error: ${snapshot.error}'),
-              );
+              return Center(child: Text('Error: ${snapshot.error}'));
             }
-            
+
             final sentRequests = snapshot.data ?? [];
 
             if (sentRequests.isEmpty) {
@@ -432,9 +424,9 @@ class _SentRequestsTab extends StatelessWidget {
               itemCount: sentRequests.length,
               itemBuilder: (context, index) {
                 final request = sentRequests[index];
-                
+
                 return FutureBuilder<User?>(
-                  future: getUserDetails(request.receiverId),
+                  future: getUserDetails(request.toUserId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const ListTile(
@@ -445,21 +437,19 @@ class _SentRequestsTab extends StatelessWidget {
                         subtitle: LinearProgressIndicator(),
                       );
                     }
-    
+
                     final user = snapshot.data;
                     if (user == null) {
                       return const ListTile(
-                        leading: CircleAvatar(
-                          child: Icon(Icons.error),
-                        ),
+                        leading: CircleAvatar(child: Icon(Icons.error)),
                         title: Text('Unknown user'),
                         subtitle: Text('Could not load user details'),
                       );
                     }
-    
-                    String statusText;
-                    Color statusColor;
-                    IconData statusIcon;
+
+                    String statusText = '';
+                    Color statusColor = Colors.orange;
+                    IconData statusIcon = Icons.hourglass_top;
 
                     switch (request.status) {
                       case model.FriendRequestStatus.pending:
@@ -483,21 +473,23 @@ class _SentRequestsTab extends StatelessWidget {
                         statusIcon = Icons.block;
                         break;
                     }
-    
+
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.blue.shade100,
-                        backgroundImage: user.profilePicUrl != null
-                            ? NetworkImage(user.profilePicUrl!)
-                            : null,
-                        child: user.profilePicUrl == null
-                            ? Text(
-                                user.name.isNotEmpty
-                                    ? user.name[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(color: Colors.blue),
-                              )
-                            : null,
+                        backgroundImage:
+                            user.profilePicUrl != null
+                                ? NetworkImage(user.profilePicUrl!)
+                                : null,
+                        child:
+                            user.profilePicUrl == null
+                                ? Text(
+                                  user.name.isNotEmpty
+                                      ? user.name[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(color: Colors.blue),
+                                )
+                                : null,
                       ),
                       title: Text(user.name),
                       subtitle: Text(

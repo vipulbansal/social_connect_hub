@@ -52,6 +52,7 @@ class UserRepositoryImpl implements UserRepository {
       bio: user.bio,
       isOnline: user.status == app_models.UserStatus.online,
       lastSeen: user.lastActive,
+      friends: user.friendIds,
       fcmToken: user.fcmTokens.isNotEmpty ? user.fcmTokens.first : null,
       createdAt: user.createdAt,
       updatedAt: user.lastActive ?? user.createdAt,
