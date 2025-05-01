@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:social_connect_hub/domain/entities/friend/friend_request_entity.dart';
+import 'package:social_connect_hub/domain/entities/user/user_entity.dart';
 import 'package:social_connect_hub/features/friends/services/friend_service.dart';
+import '../../../domain/core/result.dart';
 import '../../auth/services/auth_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -194,6 +197,285 @@ class _HomePageState extends State<HomePage>
         },
         child: Icon(_selectedIndex == 0 ? Icons.chat : Icons.person_add),
       ),
+    );
+  }
+}
+
+
+class _FriendsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final friendService = Provider.of<FriendService>(context);
+
+    return StreamBuilder<List<UserEntity>>(
+      stream: friendService.watchUserFriends(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final friends = snapshot.data ?? [];
+
+        if (friends.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.people_outline,
+                  size: 80,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No friends yet',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Add friends to start chatting',
+                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => context.push('/search'),
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Add Friends'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            // Friend requests
+            _FriendRequestsSection(),
+
+            // Divider
+            const Divider(height: 1),
+
+            // Friends list
+            Expanded(
+              child: ListView.builder(
+                itemCount: friends.length,
+                itemBuilder: (context, index) {
+                  final friend = friends[index];
+                  return _FriendListItem(friend: friend);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FriendListItem extends StatelessWidget {
+  final UserEntity friend;
+
+  const _FriendListItem({required this.friend});
+
+  @override
+  Widget build(BuildContext context) {
+   // final chatService = Provider.of<ChatService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    return Text('FriendListItem');
+    // return ListTile(
+    //   leading: CircleAvatar(
+    //     backgroundColor: Colors.blue.shade100,
+    //     backgroundImage: friend.profilePicUrl != null
+    //         ? NetworkImage(friend.profilePicUrl!)
+    //         : null,
+    //     child: friend.profilePicUrl == null
+    //         ? Text(
+    //       friend.name.isNotEmpty ? friend.name[0].toUpperCase() : '?',
+    //       style: const TextStyle(color: Colors.blue),
+    //     )
+    //         : null,
+    //   ),
+    //   title: Text(friend.name),
+    //   subtitle: Text(
+    //     friend.email,
+    //     maxLines: 1,
+    //     overflow: TextOverflow.ellipsis,
+    //   ),
+    //   trailing: IconButton(
+    //     icon: const Icon(Icons.chat_bubble_outline),
+    //     onPressed: () async {
+    //       final chatId = await chatService.createOrGetChat(friend.id);
+    //       if (context.mounted) {
+    //         context.push('/chat/$chatId');
+    //       }
+    //     },
+    //   ),
+    //   onTap: () async {
+    //     final chatId = await chatService.createOrGetChat(friend.id);
+    //     if (context.mounted) {
+    //       context.push('/chat/$chatId');
+    //     }
+    //   },
+    // );
+  }
+}
+
+class _FriendRequestsSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final friendService = Provider.of<FriendService>(context);
+
+    return StreamBuilder<List<FriendRequestEntity>>(
+      stream: friendService.watchReceivedFriendRequests(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox();
+        }
+
+        final requests = snapshot.data ?? [];
+
+        if (requests.isEmpty) {
+          return const SizedBox();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Friend Requests (${requests.length})',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/friend-requests'),
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: requests.length,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  return _FriendRequestItem(request: request);
+                },
+              ),
+            ),
+            const Divider(height: 1),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FriendRequestItem extends StatelessWidget {
+  final FriendRequestEntity request;
+
+  const _FriendRequestItem({required this.request});
+
+  @override
+  Widget build(BuildContext context) {
+    final friendService = Provider.of<FriendService>(context, listen: false);
+
+    return FutureBuilder<Result<UserEntity>?>(
+      future: Provider.of<AuthService>(context, listen: false).userRepository.getUserById(request.fromUserId),
+      builder: (context, snapshot) {
+        final sender = snapshot.data;
+
+        if (sender?.isFailure??true) {
+          return const SizedBox();
+        }
+
+        return Container(
+          width: 80,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.blue.shade100,
+                backgroundImage: sender?.getOrNull?.profilePicUrl != null
+                    ? NetworkImage(sender!.getOrNull!.profilePicUrl!)
+                    : null,
+                child: sender?.getOrNull?.profilePicUrl == null
+                    ? Text(
+                  sender?.getOrNull?.name.isNotEmpty??false ? sender!.getOrNull!.name[0].toUpperCase() : '?',
+                  style: const TextStyle(color: Colors.blue),
+                )
+                    : null,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "${sender?.getOrNull?.name}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      await friendService.acceptFriendRequest(request.id);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () async {
+                      await friendService.rejectFriendRequest(request.id);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
