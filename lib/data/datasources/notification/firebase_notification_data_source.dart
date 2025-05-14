@@ -14,9 +14,11 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
   final firebase_auth.FirebaseAuth _firebaseAuth;
   final FirebaseFirestore _firestore;
   final FirebaseMessaging _messaging;
-  
+  String? _cachedAccessToken;
+  int? _accessTokenExpiryEpoch;
+
   /// Constructor
-  const FirebaseNotificationDataSource({
+  FirebaseNotificationDataSource({
     required firebase_auth.FirebaseAuth firebaseAuth,
     required FirebaseFirestore firestore,
     required FirebaseMessaging messaging,
@@ -147,7 +149,7 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
             'title': title,
             'body': body,
           },
-          'data': data ?? {},
+          'data': data?.map((key, value) => MapEntry(key, value.toString())) ?? {},
           'android': {
             'priority': 'high',
           },
@@ -357,8 +359,16 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
 
   Future<String?> _generateAccessToken() async {
     try {
+      final currentEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      // Use cached token if it's still valid
+      if (_cachedAccessToken != null &&
+          _accessTokenExpiryEpoch != null &&
+          currentEpoch < _accessTokenExpiryEpoch!) {
+        return _cachedAccessToken;
+      }
+
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final exp = iat + 3600; // 1 hour expiry
+      final exp = iat + 3600 ; // 1 hours validity
 
       final claims = {
         'iss': clientEmail,
@@ -390,7 +400,9 @@ class FirebaseNotificationDataSource implements NotificationDataSource {
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        return body['access_token'];
+        _cachedAccessToken = body['access_token'];
+        _accessTokenExpiryEpoch = exp; // store expiry to avoid regenerating
+        return _cachedAccessToken;
       } else {
         print('Failed to generate access token. Status code: ${response.statusCode}');
         print('Response body: ${response.body}');

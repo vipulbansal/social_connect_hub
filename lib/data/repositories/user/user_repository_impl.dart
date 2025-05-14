@@ -76,5 +76,131 @@ class UserRepositoryImpl implements UserRepository {
   }
 
 
+  @override
+  Future<Result<UserEntity>> getCurrentUser() async {
+    try {
+      final user = await _userDataSource.getCurrentUser();
+
+      if (user != null) {
+        return Result.success(_mapToUserEntity(user));
+      }
+
+      return Result.failure(
+        const UserFailure('No authenticated user found'),
+      );
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> deleteUserAccount(String userId) async {
+    try {
+      await _userDataSource.deleteUserAccount(userId);
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<List<String>>> getUserFcmTokens(String userId) async {
+    try {
+      final tokens = await _userDataSource.getUserFcmTokens(userId);
+      return Result.success(tokens);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> addFcmToken(String userId, String token) async {
+    try {
+      await _userDataSource.addFcmToken(userId, token);
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> removeFcmToken(String userId, String token) async {
+    try {
+      await _userDataSource.removeFcmToken(userId, token);
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+  @override
+  Stream<UserEntity> watchUser(String userId) {
+    return _userDataSource.watchUser(userId)
+        .map((user) => user != null
+        ? _mapToUserEntity(user)
+        : UserEntity(
+      id: userId,
+      name: 'Unknown User',
+      email: '',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ));
+  }
+
+  @override
+  Stream<UserEntity?> watchCurrentUser() {
+    return _userDataSource.watchCurrentUser()
+        .map((user) => user != null ? _mapToUserEntity(user) : null);
+  }
+
+
+  @override
+  Future<Result<bool>> getUserOnlineStatus(String userId) async {
+    try {
+      final isOnline = await _userDataSource.getUserOnlineStatus(userId);
+      return Result.success(isOnline);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<void>> updateUserOnlineStatus(String userId, bool isOnline) async {
+    try {
+      await _userDataSource.updateUserOnlineStatus(userId, isOnline);
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+
+
+
+
+  @override
+  Future<Result<UserEntity>> updateUserProfile(UserEntity user) async {
+    try {
+      // Convert domain entity to data model
+      final userModel = _mapToUserModel(user);
+
+      // Update user profile
+      final updatedUser = await _userDataSource.updateUserProfile(userModel);
+
+      if (updatedUser != null) {
+        return Result.success(_mapToUserEntity(updatedUser));
+      }
+
+      return Result.failure(
+        const UserFailure('Failed to update user profile'),
+      );
+    } catch (e) {
+      return Result.failure(UserFailure(e.toString()));
+    }
+  }
+
+
+
+
 
 }

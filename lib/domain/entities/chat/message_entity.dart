@@ -1,90 +1,157 @@
-/// Represents a message in a chat conversation in the domain layer
+import 'package:equatable/equatable.dart';
+
+/// Entity representing a chat message
 ///
-/// This class is used to represent a single message within a chat.
-/// It contains all the message data including content, sender, and timestamps.
-class MessageEntity {
-  /// Unique identifier for the message
+/// This is the canonical MessageEntity class that should be used throughout the application.
+/// The MessageEntity in the chat directory is deprecated and forwards to this class.
+class MessageEntity extends Equatable {
+  /// Unique identifier
   final String id;
-  
-  /// ID of the chat this message belongs to
+
+  /// Chat ID this message belongs to
   final String chatId;
-  
-  /// ID of the user who sent the message
+
+  /// User ID of the sender
   final String senderId;
-  
-  /// Content of the message
+
+  /// User ID of the receiver (for direct messages)
+  final String? receiverId;
+
+  /// Message content
   final String content;
-  
-  /// Type of content (e.g. 'text', 'image', 'video', 'audio')
+
+  /// Type of content (text, image, video, file, audio)
   final String contentType;
-  
-  /// Whether the message has been read by the recipient
-  final bool isRead;
-  
-  /// When the message was created
-  final DateTime createdAt;
-  
-  /// When the message was last updated
-  final DateTime updatedAt;
-  
-  /// Optional URL for media content
+
+  /// Message type (regular, system, etc.)
+  final dynamic type;
+
+  /// Message status (sent, delivered, read, etc.)
+  final dynamic status;
+
+  /// URL to media (for image, video, file, audio)
   final String? mediaUrl;
-  
-  /// Optional metadata for the message (e.g. image dimensions)
+
+  /// Thumbnail URL for media
+  final String? thumbnailUrl;
+
+  /// List of user IDs who have read the message
+  final List<String> readBy;
+
+  /// Whether the message has been read
+  final bool isRead;
+
+  /// Whether the message has been edited
+  final bool isEdited;
+
+  /// Whether the message has been deleted
+  final bool isDeleted;
+
+  /// Reply to message ID (if this is a reply)
+  final String? replyToId;
+
+  /// Additional metadata
   final Map<String, dynamic>? metadata;
 
-  /// Creates a new [MessageEntity]
-  MessageEntity({
+  /// Created timestamp
+  final DateTime createdAt;
+
+  /// Updated timestamp
+  final DateTime updatedAt;
+
+  /// Timestamp (used in some implementations)
+  final DateTime? timestamp;
+
+  /// Constructor
+  const MessageEntity({
     required this.id,
     required this.chatId,
     required this.senderId,
+    this.receiverId,
     required this.content,
-    required this.contentType,
-    required this.isRead,
+    this.contentType = 'text',
+    this.type,
+    this.status,
+    this.mediaUrl,
+    this.thumbnailUrl,
+    this.readBy = const [],
+    this.isRead = false,
+    this.isEdited = false,
+    this.isDeleted = false,
+    this.replyToId,
+    this.metadata,
     required this.createdAt,
     required this.updatedAt,
-    this.mediaUrl,
-    this.metadata,
+    this.timestamp,
   });
 
-  /// Creates a copy of this [MessageEntity] with the specified fields replaced
+  @override
+  List<Object?> get props => [
+    id,
+    chatId,
+    senderId,
+    receiverId,
+    content,
+    contentType,
+    type,
+    status,
+    mediaUrl,
+    thumbnailUrl,
+    readBy,
+    isRead,
+    isEdited,
+    isDeleted,
+    replyToId,
+    metadata,
+    createdAt,
+    updatedAt,
+    timestamp,
+  ];
+
+  /// Create a copy of this entity with specified changes
   MessageEntity copyWith({
     String? id,
     String? chatId,
     String? senderId,
+    String? receiverId,
     String? content,
     String? contentType,
+    dynamic type,
+    dynamic status,
+    String? mediaUrl,
+    String? thumbnailUrl,
+    List<String>? readBy,
     bool? isRead,
+    bool? isEdited,
+    bool? isDeleted,
+    String? replyToId,
+    Map<String, dynamic>? metadata,
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? mediaUrl,
-    Map<String, dynamic>? metadata,
+    DateTime? timestamp,
   }) {
     return MessageEntity(
       id: id ?? this.id,
       chatId: chatId ?? this.chatId,
       senderId: senderId ?? this.senderId,
+      receiverId: receiverId ?? this.receiverId,
       content: content ?? this.content,
       contentType: contentType ?? this.contentType,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      readBy: readBy ?? this.readBy,
       isRead: isRead ?? this.isRead,
+      isEdited: isEdited ?? this.isEdited,
+      isDeleted: isDeleted ?? this.isDeleted,
+      replyToId: replyToId ?? this.replyToId,
+      metadata: metadata ?? this.metadata,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      mediaUrl: mediaUrl ?? this.mediaUrl,
-      metadata: metadata ?? this.metadata,
+      timestamp: timestamp ?? this.timestamp,
     );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is MessageEntity && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
-
-  @override
-  String toString() {
-    return 'MessageEntity(id: $id, chatId: $chatId, senderId: $senderId, contentType: $contentType)';
-  }
 }
+
+

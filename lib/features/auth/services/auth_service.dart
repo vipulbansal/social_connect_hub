@@ -302,4 +302,75 @@ class AuthService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  /// Get user by ID
+  /// Returns the user entity if found, null otherwise
+  Future<UserEntity?> getUserById(String userId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await _userRepository.getUserById(userId);
+
+    _isLoading = false;
+    notifyListeners();
+
+    return result.fold(
+      onSuccess: (user) => user,
+      onFailure: (_) => null,
+    );
+  }
+
+  /// Update user profile with the provided information
+  /// Returns true on success, false on failure
+  Future<bool> updateUserProfile({
+    String? name,
+    String? displayName,
+    String? bio,
+    String? location,
+    String? website,
+    String? phoneNumber,
+    String? profilePictureUrl,
+    String? bannerImageUrl,
+  }) async {
+    if (_currentUser == null) {
+      _errorMessage = 'No authenticated user found';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Create an updated user entity with the new values
+    final updatedUser = UserEntity(
+      id: _currentUser!.id,
+      name: name ?? _currentUser!.name,
+      email: _currentUser!.email,
+      photoUrl: profilePictureUrl ?? _currentUser!.photoUrl,
+      bio: bio ?? _currentUser!.bio,
+      phoneNumber: phoneNumber ?? _currentUser!.phoneNumber,
+      createdAt: _currentUser!.createdAt,
+      updatedAt: DateTime.now(),
+      isOnline: _currentUser!.isOnline,
+      lastSeen: _currentUser!.lastSeen,
+    );
+
+    final result = await _userRepository.updateUserProfile(updatedUser);
+
+    return result.fold(
+      onSuccess: (updatedUserEntity) {
+        _currentUser = updatedUserEntity;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      },
+      onFailure: (failure) {
+        _errorMessage = failure.message;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
 }

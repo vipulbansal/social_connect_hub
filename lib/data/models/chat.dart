@@ -69,7 +69,7 @@ class Chat {
     return DateTime.now();
   }
   
-  static dynamic _dateTimeToJson(DateTime dateTime) {
-    return dateTime.toIso8601String();
+  static dynamic _dateTimeToJson(DateTime? dateTime) {
+    return dateTime?.toIso8601String();
   }
 }

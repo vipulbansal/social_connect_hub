@@ -9,10 +9,11 @@ abstract class ChatRepository {
   
   /// Get chats for a user
   Future<Result<List<ChatEntity>>> getUserChats(String userId);
-  
+
   /// Get messages for a chat
-  Future<Result<List<MessageEntity>>> getChatMessages(String chatId);
-  
+  Future<Result<List<MessageEntity>>> getChatMessages(String chatId, {int limit = 50, String? lastMessageId});
+
+
   /// Send a message
   Future<Result<MessageEntity>> sendMessage(MessageEntity message);
   
@@ -30,7 +31,7 @@ abstract class ChatRepository {
   
   /// Delete a chat
   Future<Result<void>> deleteChat(String chatId);
-  
+
   /// Stream chat messages
   Stream<List<MessageEntity>> streamChatMessages(String chatId);
   

@@ -4,43 +4,55 @@ import 'package:equatable/equatable.dart';
 class UserEntity extends Equatable {
   /// Unique identifier
   final String id;
-  
+
   /// User's display name
   final String name;
-  
+
   /// User's email address
   final String email;
-  
+
   /// URL to user's avatar image
   final String? avatarUrl;
-  
+
   /// Alternative URL to user's photo (for backwards compatibility)
   final String? photoUrl;
-  
+
   /// User's bio or status
   final String? bio;
-  
+
   /// User's online status
   final bool isOnline;
-  
+
   /// Timestamp of last activity
   final DateTime? lastSeen;
-  
+
   /// User's FCM token for push notifications
   final String? fcmToken;
-  
+
   /// User's phone number
   final String? phoneNumber;
-  
+
   /// List of friend IDs
   final List<String> friends;
-  
+
   /// Timestamp when user was created
   final DateTime createdAt;
-  
+
   /// Timestamp when user profile was last updated
   final DateTime updatedAt;
-  
+
+  // /// User's custom display name (can be different from regular name)
+  // final String? displayName;
+  //
+  // /// User's location
+  // final String? location;
+  //
+  // /// User's website URL
+  // final String? website;
+  //
+  // /// URL to the user's banner image
+  // final String? bannerImageUrl;
+
   // Backward compatibility getters
   String? get profilePicUrl => avatarUrl;
   String? get displayName => name;

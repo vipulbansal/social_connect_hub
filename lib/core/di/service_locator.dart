@@ -5,12 +5,16 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:social_connect_hub/core/themes/theme_provider.dart';
+import 'package:social_connect_hub/data/datasources/chat/chat_data_source.dart';
+import 'package:social_connect_hub/data/datasources/chat/firebase_chat_data_source.dart';
 import 'package:social_connect_hub/data/datasources/friend/firebase_friend_data_source.dart';
 import 'package:social_connect_hub/data/datasources/friend/friend_data_source.dart';
 import 'package:social_connect_hub/data/datasources/notification/firebase_notification_data_source.dart';
 import 'package:social_connect_hub/data/datasources/notification/notification_data_source.dart';
 import 'package:social_connect_hub/data/datasources/user/firebase_user_data_source.dart';
+import 'package:social_connect_hub/data/repositories/chat/chat_repository_impl.dart';
 import 'package:social_connect_hub/data/repositories/friend/friend_repository_impl.dart';
+import 'package:social_connect_hub/domain/repositories/chat/chat_repository.dart';
 import 'package:social_connect_hub/domain/repositories/friend/friend_repository.dart';
 import 'package:social_connect_hub/domain/repositories/notification/notification_repository.dart';
 import 'package:social_connect_hub/domain/usecases/friend/send_friend_request_usecase.dart';
@@ -19,6 +23,7 @@ import 'package:social_connect_hub/domain/usecases/friend/watch_sent_friend_requ
 import 'package:social_connect_hub/domain/usecases/notification/send_push_notification_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/notification/watch_user_notifications_usecase.dart';
 import 'package:social_connect_hub/domain/usecases/user/search_users_usecase.dart';
+import 'package:social_connect_hub/features/chat/services/chat_service.dart';
 import 'package:social_connect_hub/features/friends/services/friend_service.dart';
 import 'package:social_connect_hub/features/notification/services/notification_service.dart';
 import 'package:social_connect_hub/features/search/services/search_service.dart';
@@ -109,6 +114,13 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
+  locator.registerLazySingleton<ChatDataSource>(
+        () => FirebaseChatDataSource(
+      firebaseAuth: locator<FirebaseAuth>(),
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
   // App services
   // Repositories
   locator.registerLazySingleton<AuthRepository>(
@@ -123,8 +135,13 @@ Future<void> setupServiceLocator() async {
     () => FriendRepositoryImpl(friendDataSource: locator<FriendDataSource>()),
   );
 
+
   locator.registerLazySingleton<NotificationRepository>(
         () => NotificationRepositoryImpl(notificationDataSource: locator<NotificationDataSource>()),
+  );
+
+  locator.registerLazySingleton<ChatRepository>(
+        () => ChatRepositoryImpl(chatDataSource: locator<ChatDataSource>()),
   );
 
   // Auth use cases
@@ -208,6 +225,18 @@ Future<void> setupServiceLocator() async {
         watchUserNotificationsUseCase: locator<WatchUserNotificationsUseCase>()
     ),
   );
+
+
+  locator.registerLazySingleton<ChatService>(
+        () => ChatService(
+        chatRepository:   locator<ChatRepository>(),
+        userRepository: locator<UserRepository>(),
+        authRepository: locator<AuthRepository>(),
+        sendPushNotificationUseCase: locator<SendPushNotificationUseCase>(),
+    ),
+  );
+
+
 
 
   locator.registerLazySingleton<FriendService>(

@@ -5,7 +5,9 @@ import 'package:social_connect_hub/domain/entities/friend/friend_request_entity.
 import 'package:social_connect_hub/domain/entities/user/user_entity.dart';
 import 'package:social_connect_hub/features/friends/services/friend_service.dart';
 import '../../../domain/core/result.dart';
+import '../../../domain/entities/chat/chat_entity.dart';
 import '../../auth/services/auth_service.dart';
+import '../../chat/services/chat_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -137,16 +139,16 @@ class _HomePageState extends State<HomePage>
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
+              // const PopupMenuItem<String>(
+              //   value: 'settings',
+              //   child: Row(
+              //     children: [
+              //       Icon(Icons.settings),
+              //       SizedBox(width: 8),
+              //       Text('Settings'),
+              //     ],
+              //   ),
+              // ),
               const PopupMenuItem<String>(
                 value: 'logout',
                 child: Row(
@@ -178,35 +180,216 @@ class _HomePageState extends State<HomePage>
                 return Center(child: CircularProgressIndicator());
               } else {
                 return Center(
-                  child: Text('Home ${provider.currentUser?.name}'),
+                  child: Column(
+                    children: [
+                      Text('${provider.currentUser?.name}'),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            // Chats tab
+                            _ChatsTab(),
+                            // Friends tab
+                            _FriendsTab(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }
             },
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (_selectedIndex == 0) {
-            // New chat
-            context.push('/search');
-          } else {
-            // Add friend
-            context.push('/search');
-          }
-        },
-        child: Icon(_selectedIndex == 0 ? Icons.chat : Icons.person_add),
+      floatingActionButton: Visibility(
+        visible: false,
+        child: FloatingActionButton(
+          onPressed: () {
+            if (_selectedIndex == 0) {
+              // New chat
+              context.push('/search');
+            } else {
+              // Add friend
+              context.push('/search');
+            }
+          },
+          child: Icon(_selectedIndex == 0 ? Icons.chat : Icons.person_add),
+        ),
       ),
     );
   }
 }
+
+class _ChatsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final chatService = Provider.of<ChatService>(context);
+
+    return StreamBuilder<List<ChatEntity>>(
+      stream: chatService.getChatListStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final chats = snapshot.data ?? [];
+
+        if (chats.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.chat_bubble_outline,
+                  size: 80,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No chats yet',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Start a conversation by searching for friends',
+                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => context.push('/search'),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Find Friends'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: chats.length,
+          itemBuilder: (context, index) {
+            final chat = chats[index];
+            return _ChatListItem(chat: chat);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ChatListItem extends StatelessWidget {
+  final ChatEntity chat;
+
+  const _ChatListItem({required this.chat});
+
+  @override
+  Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = authService.currentUser?.id ?? '';
+
+    // Get other participant's ID
+    final otherUserId = chat.participantIds.firstWhere(
+          (id) => id != currentUserId,
+      orElse: () => '',
+    );
+
+    return FutureBuilder<UserEntity?>(
+      future: Provider.of<ChatService>(context, listen: false).getUserById(otherUserId),
+      builder: (context, snapshot) {
+        final otherUser = snapshot.data;
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.blue.shade100,
+            backgroundImage: otherUser?.photoUrl != null
+                ? NetworkImage(otherUser!.photoUrl!)
+                : null,
+            child: otherUser?.photoUrl == null
+                ? Text(
+              otherUser?.name.isNotEmpty == true
+                  ? otherUser!.name[0].toUpperCase()
+                  : '?',
+              style: const TextStyle(color: Colors.blue),
+            )
+                : null,
+          ),
+          title: Text(
+            otherUser?.name ?? 'Unknown User',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            chat.lastMessageContent ?? 'No messages yet',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (chat.lastMessageTimestamp != null)
+                Text(
+                  _formatTime(chat.lastMessageTimestamp!),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              const SizedBox(height: 4),
+              if (chat.lastMessageSenderId != null && chat.lastMessageSenderId != currentUserId)
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text(
+                    '1',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onTap: () {
+            context.push('/chat/${chat.id}');
+          },
+        );
+      },
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    if (now.year == time.year && now.month == time.month && now.day == time.day) {
+      // Today, show time
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    } else if (now.year == time.year) {
+      // This year, show month and day
+      return '${time.month}/${time.day}';
+    } else {
+      // Different year, show year
+      return '${time.month}/${time.day}/${time.year}';
+    }
+  }
+}
+
 
 
 class _FriendsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final friendService = Provider.of<FriendService>(context);
-
     return StreamBuilder<List<UserEntity>>(
       stream: friendService.watchUserFriends(),
       builder: (context, snapshot) {
@@ -280,54 +463,6 @@ class _FriendsTab extends StatelessWidget {
   }
 }
 
-class _FriendListItem extends StatelessWidget {
-  final UserEntity friend;
-
-  const _FriendListItem({required this.friend});
-
-  @override
-  Widget build(BuildContext context) {
-   // final chatService = Provider.of<ChatService>(context, listen: false);
-    final authService = Provider.of<AuthService>(context, listen: false);
-    return Text('FriendListItem');
-    // return ListTile(
-    //   leading: CircleAvatar(
-    //     backgroundColor: Colors.blue.shade100,
-    //     backgroundImage: friend.profilePicUrl != null
-    //         ? NetworkImage(friend.profilePicUrl!)
-    //         : null,
-    //     child: friend.profilePicUrl == null
-    //         ? Text(
-    //       friend.name.isNotEmpty ? friend.name[0].toUpperCase() : '?',
-    //       style: const TextStyle(color: Colors.blue),
-    //     )
-    //         : null,
-    //   ),
-    //   title: Text(friend.name),
-    //   subtitle: Text(
-    //     friend.email,
-    //     maxLines: 1,
-    //     overflow: TextOverflow.ellipsis,
-    //   ),
-    //   trailing: IconButton(
-    //     icon: const Icon(Icons.chat_bubble_outline),
-    //     onPressed: () async {
-    //       final chatId = await chatService.createOrGetChat(friend.id);
-    //       if (context.mounted) {
-    //         context.push('/chat/$chatId');
-    //       }
-    //     },
-    //   ),
-    //   onTap: () async {
-    //     final chatId = await chatService.createOrGetChat(friend.id);
-    //     if (context.mounted) {
-    //       context.push('/chat/$chatId');
-    //     }
-    //   },
-    // );
-  }
-}
-
 class _FriendRequestsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -397,12 +532,12 @@ class _FriendRequestItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final friendService = Provider.of<FriendService>(context, listen: false);
 
-    return FutureBuilder<Result<UserEntity>?>(
-      future: Provider.of<AuthService>(context, listen: false).userRepository.getUserById(request.fromUserId),
+    return FutureBuilder<UserEntity?>(
+      future: Provider.of<ChatService>(context, listen: false).getUserById(request.fromUserId),
       builder: (context, snapshot) {
         final sender = snapshot.data;
 
-        if (sender?.isFailure??true) {
+        if (sender == null) {
           return const SizedBox();
         }
 
@@ -414,19 +549,19 @@ class _FriendRequestItem extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Colors.blue.shade100,
-                backgroundImage: sender?.getOrNull?.profilePicUrl != null
-                    ? NetworkImage(sender!.getOrNull!.profilePicUrl!)
+                backgroundImage: sender.photoUrl != null
+                    ? NetworkImage(sender.photoUrl!)
                     : null,
-                child: sender?.getOrNull?.profilePicUrl == null
+                child: sender.photoUrl == null
                     ? Text(
-                  sender?.getOrNull?.name.isNotEmpty??false ? sender!.getOrNull!.name[0].toUpperCase() : '?',
+                  sender.name.isNotEmpty ? sender.name[0].toUpperCase() : '?',
                   style: const TextStyle(color: Colors.blue),
                 )
                     : null,
               ),
               const SizedBox(height: 4),
               Text(
-                "${sender?.getOrNull?.name}",
+                sender.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 12),
@@ -475,6 +610,54 @@ class _FriendRequestItem extends StatelessWidget {
             ],
           ),
         );
+      },
+    );
+  }
+}
+
+class _FriendListItem extends StatelessWidget {
+  final UserEntity friend;
+
+  const _FriendListItem({required this.friend});
+
+  @override
+  Widget build(BuildContext context) {
+    final chatService = Provider.of<ChatService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.blue.shade100,
+        backgroundImage: friend.photoUrl != null
+            ? NetworkImage(friend.photoUrl!)
+            : null,
+        child: friend.photoUrl == null
+            ? Text(
+          friend.name.isNotEmpty ? friend.name[0].toUpperCase() : '?',
+          style: const TextStyle(color: Colors.blue),
+        )
+            : null,
+      ),
+      title: Text(friend.name),
+      subtitle: Text(
+        friend.email,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.chat_bubble_outline),
+        onPressed: () async {
+          final chatId = await chatService.createOrGetChat(friend.id);
+          if (context.mounted) {
+            context.push('/chat/$chatId');
+          }
+        },
+      ),
+      onTap: () async {
+        final chatId = await chatService.createOrGetChat(friend.id);
+        if (context.mounted) {
+          context.push('/chat/$chatId');
+        }
       },
     );
   }
