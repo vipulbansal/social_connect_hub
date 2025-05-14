@@ -43,6 +43,20 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: "^0.14.3"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "generated-icon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "app_icon.svg"
+    background_color: "#1A73E8"
+    theme_color: "#1A73E8"
+
 
   flutter_lints: ^5.0.0
   hive_generator: ^2.0.1
