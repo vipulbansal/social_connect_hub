@@ -1,5 +1,36 @@
 # Social Connect Hub
 
+<div align="center">
+
+<img src="generated-icon.png" width="100" height="100" alt="Social Connect Hub App Icon">
+
+Social Connect Hub is a sophisticated Flutter-powered social communication platform that combines intelligent networking with rich media sharing and dynamic user interactions.
+
+[![Provider Architecture](https://img.shields.io/badge/Architecture-Provider-blue?style=flat-square&logo=flutter&logoColor=white)](https://pub.dev/packages/provider)
+[![Firestore](https://img.shields.io/badge/Cloud-Firestore-orange?style=flat-square&logo=firebase&logoColor=white)](https://firebase.google.com/products/firestore)
+[![Hive](https://img.shields.io/badge/Local_Storage-Hive-yellow?style=flat-square&logo=database&logoColor=white)](https://docs.hivedb.dev/)
+[![Clean Architecture](https://img.shields.io/badge/Design-Clean_Architecture-green?style=flat-square&logo=flutter&logoColor=white)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+
+<!-- Architecture Diagram -->
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ResoCoder/flutter-tdd-clean-architecture-course/master/architecture-proposal.png" width="500" alt="Clean Architecture Diagram">
+</p>
+
+<!-- Technology Stack Visual -->
+<p align="center">
+  <img src="https://firebase.google.com/static/images/brand-guidelines/logo-built_white.png" height="50" alt="Firebase">
+  <img src="https://docs.hivedb.dev/logo.svg" height="50" alt="Hive Database">
+</p>
+
+</div>
+
+
+<div align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.vipulsoftwares.vipul_task_master">
+    <img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" alt="Get it on Google Play" width="200"/>
+  </a>
+</div>
+
 ## Overview
 
 Social Connect Hub is a sophisticated Flutter-powered social communication platform that combines intelligent networking with rich media sharing and dynamic user interactions. The application follows clean architecture principles and is built with a focus on maintainability, scalability, and testability.
