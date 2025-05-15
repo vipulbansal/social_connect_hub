@@ -26,7 +26,7 @@ Social Connect Hub is a sophisticated Flutter-powered social communication platf
 
 
 <div align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.vipulsoftwares.vipul_task_master">
+  <a href="https://play.google.com/store/apps/details?id=com.vipulsoftwares.social_connect_hub">
     <img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" alt="Get it on Google Play" width="200"/>
   </a>
 </div>
